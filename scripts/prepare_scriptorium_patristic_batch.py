@@ -107,10 +107,10 @@ def header(work: dict) -> str:
     ]
     return "\n".join(f"{key}: {value}" for key,value in fields if value) + "\n\n"
 
-def add(items, root, author, title, body, rel, **meta):
+def add(items, root, author, title, body, rel, min_chars=250, min_words=40, **meta):
     body = clean(body)
     words = len(re.findall(r"\S+", body))
-    if len(body) < 250 or words < 40:
+    if len(body) < min_chars or words < min_words:
         raise ValueError(f"Text too short/incomplete: {author} — {title} ({words} words)")
     items.append({"author":author,"title":title,"body":body,"source_path":rel,"url":raw_url(rel),**meta})
 
@@ -139,7 +139,8 @@ def add_severus(root, items):
             container_title="Patrologia Orientalis",volume="XII, fasc. 2",
             description="One separately numbered letter or extract from the 1915 Syriac-source collection. Where the source heading says 'from the letter', this is an excerpt, not a claim to a complete original letter.",
             attribution_note="The historic source presents these as letters or extracts of Severus; preserve each item's original scope and date.",
-            rights_notes="The source transcription explicitly says 'Public domain — copy freely'. English translation by E. W. Brooks (1915); source and translator are credited.")
+            rights_notes="The source transcription explicitly says 'Public domain — copy freely'. English translation by E. W. Brooks (1915); source and translator are credited.",
+            min_chars=50, min_words=8)
     if len([x for x in items if x["author"]=="Severus of Antioch"]) != 61:
         raise ValueError("Severus split failed its 61-item check")
 
