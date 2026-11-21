@@ -30,6 +30,8 @@ def html_to_text(raw: str, skip_title: str | None = None) -> str:
     soup = BeautifulSoup(raw, "html.parser")
     root = soup.find("article") or soup.body or soup
     for node in list(root.find_all(True)):
+        if getattr(node, "attrs", None) is None:
+            continue
         ident = str(node.get("id") or "").lower()
         if ident.startswith(("fn", "footnote")) or node.name in ("script","style","nav","header","footer","img","svg"):
             node.decompose()
