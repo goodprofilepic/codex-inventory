@@ -1,0 +1,53 @@
+name: Prepare Scriptorium Patristic Batch
+
+on:
+  push:
+    branches:
+      - main
+      - codex/patristic-first-batch
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  prepare-acquisition:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Check out acquisition scripts
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install text extraction tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y antiword
+          python -m pip install --disable-pip-version-check beautifulsoup4
+      - name: Download public patristic source vault
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -L --fail --retry 3 --retry-delay 2 \
+            "https://codeload.github.com/HistoricalChristianFaith/Writings-Database/zip/refs/heads/master" \
+            -o /tmp/writings-database.zip
+          mkdir -p /tmp/writings-database
+          unzip -q /tmp/writings-database.zip -d /tmp/writings-database
+          SOURCE_DIR="$(find /tmp/writings-database -mindepth 1 -maxdepth 1 -type d | head -n 1)"
+          test -n "$SOURCE_DIR"
+          echo "SOURCE_DIR=$SOURCE_DIR" >> "$GITHUB_ENV"
+      - name: Build individual Reading Room text files and import ZIP
+        run: |
+          python scripts/prepare_scriptorium_patristic_batch.py \
+            --source-dir "$SOURCE_DIR" \
+            --output-dir build/scriptorium-patristic-batch-01
+      - name: Upload the ZIP and its separate manifest
+        uses: actions/upload-artifact@v4
+        with:
+          name: scriptorium-patristic-batch-01
+          path: build/scriptorium-patristic-batch-01/
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
