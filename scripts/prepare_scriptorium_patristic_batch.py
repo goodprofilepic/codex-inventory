@@ -260,16 +260,34 @@ def main():
         description="Dionysius Exiguus's treatise on the Paschal cycle, with the translator's explanatory notes retained where part of the source.",
         rights_notes="The translator explicitly placed the 2006 English translation in the public domain.")
 
-    # Hegemonius: preserve the traditional Archelaus attribution only as a note.
-    rel="Archelaus of Carrhae/The Acts of the Disputation with the Heresiarch Manes.html"
-    add(items,root,"Hegemonius","The Acts of the Disputation with the Heresiarch Manes",read_html(root,rel,skip_title="The Acts of the Disputation with the Heresiarch Manes"),rel,
-        date="Fourth century; composition date disputed",translator="S. D. F. Salmond",
-        editor="Alexander Roberts and James Donaldson; American edition edited by A. Cleveland Coxe",
-        edition="Ante-Nicene Fathers, Vol. VI (Buffalo: Christian Literature Publishing Company, 1886)",
-        publisher="Christian Literature Publishing Company",publication_date="1886",container_title="Ante-Nicene Fathers",volume="VI",
-        description="A late antique disputation narrative concerning Mani and Christian polemic against Manichaeism.",
-        attribution_note="Traditionally transmitted under the name of Archelaus of Carrhae. Modern scholarship frequently attributes the work to Hegemonius; do not present the traditional attribution as certain.",
-        rights_notes="Historic 1886 English edition; public domain. Attribution is explicitly qualified.")
+    # Gildas: surviving fragments and associated texts from historic nineteenth-century editions.
+    gildas_items = [
+        ("Gildas the Wise/Fragments of Letters/English translation.html",
+         "Fragments from Lost Letters of Gildas",
+         "Surviving fragments assigned to Gildas, transmitted through later canonical collections; fragmentary and not a complete epistolary work.",
+         "Fragments of Letters are printed from Haddan and Stubbs, Councils and Ecclesiastical Documents Relating to Great Britain and Ireland, Vol. I (1869), and Wasserschleben, Irische Kanonensammlung, 2nd ed. (1885).",
+         "The source presents these as extracts transmitted under Gildas's name. Treat them as attributed fragments, not complete or independently authenticated letters."),
+        ("Gildas the Wise/Lorica/English translation.html",
+         "The Lorica of Gildas",
+         "A short protective hymn traditionally associated with Gildas.",
+         "Haddan and Stubbs, Councils and Ecclesiastical Documents Relating to Great Britain and Ireland, Vol. I (1869), Appendix C.",
+         "The source's own introduction notes that a manuscript colophon attributes the hymn to Lathacan and that the connection with Gildas rests on a separate Irish tradition. Authorship is uncertain."),
+        ("Gildas the Wise/Penitential/English translation.html",
+         "The Penitential of Gildas",
+         "A penitential text transmitted under Gildas's name; retain its traditional attribution as disputed.",
+         "Wasserschleben, Bussordnungen (1851), reprinted in Haddan and Stubbs, Councils and Ecclesiastical Documents Relating to Great Britain and Ireland, Vol. I (1869), p. 113.",
+         "The title reflects traditional transmission, not secure individual authorship. Preserve the source's note that penitential rules circulated in British and Irish ecclesiastical contexts."),
+    ]
+    for rel, title, description, edition, attribution in gildas_items:
+        add(items,root,"Gildas the Wise",title,read_html(root,rel,skip_title="English translation"),rel,
+            date="Sixth century; exact dates disputed",
+            translator="Not separately credited in the source edition",
+            editor="A. W. Haddan and William Stubbs",
+            edition=edition,
+            publication_date="1869",
+            description=description,
+            attribution_note=attribution,
+            rights_notes="The English text derives from nineteenth-century editions (1869; with 1851/1885 source material as specified), now public domain. The source transcription does not separately identify an individual translator.")
 
     # John of Ephesus: import only the two surviving book texts available in this package.
     for rel,title in [
