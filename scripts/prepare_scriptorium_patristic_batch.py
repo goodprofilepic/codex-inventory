@@ -133,7 +133,7 @@ def add_severus(root, items):
         date = "Sixth-century correspondence; individual date sometimes uncertain"
         m = re.search(r"\[([^\]]{3,40})\]",label)
         if m and re.search(r"\d{3,4}",m.group(1)): date=m.group(1).strip(" .")
-        add(items,root,"Severus of Antioch",f"Letter / Extract {num} — {detail[:115]}",f"## {label}\n\n{body}",rel,
+        add(items,root,"Severus of Antioch",f"Letter / Extract {num} — {detail[:115]}",body,rel,
             date=date,translator="E. W. Brooks",
             edition="A Collection of Letters of Severus of Antioch from Numerous Syriac Manuscripts, Patrologia Orientalis XII, fasc. 2 (1915); transcribed by Roger Pearse (2003)",
             container_title="Patrologia Orientalis",volume="XII, fasc. 2",
