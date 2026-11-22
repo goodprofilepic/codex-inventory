@@ -40,6 +40,8 @@ ALIASES = {
     "archelaus": "archelaus of carrhae",
     "archelaus of carrhae": "archelaus of carrhae",
     "asterius of amasea": "asterius of amasea bishop of amasia",
+    "macarius of egypt": "pseudo-macarius",
+    "pseudo-macarius": "pseudo-macarius",
 }
 
 def norm(s: str) -> str:
