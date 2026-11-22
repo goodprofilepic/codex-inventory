@@ -458,7 +458,7 @@ def write_outputs(b,out):
         "3. Use the manifest to inspect titles, authors, source editions, word counts and rights notes before publishing.",""]
     (out/"README.md").write_text("\n".join(readme),encoding="utf-8")
     print(f"PREPARED_WORKS={len(items)}")
-    print(f"TOTAL_WORDS={sum(len(re.findall(r'\\S+',x['body'])) for x in items)}")
+    print(f"TOTAL_WORDS={sum(len(re.findall(r'\S+',x['body'])) for x in items)}")
     print(f"ZIP_BYTES={zp.stat().st_size}")
     print("AUTHOR_COUNTS="+"; ".join(f"{a}:{n}" for a,n in sorted(counts.items())))
     print("SKIPPED_COUNTS="+"; ".join(f"{k}:{v}" for k,v in sorted(b.skipped.items())))
