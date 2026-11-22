@@ -1,0 +1,32 @@
+SCRIPTORIUM / EUSEBIUS READING ROOM — BATCH 2026-11-22
+Target: 200 new Reading Room entries
+Packaged: 201 entries in five ZIP archives
+
+Archive counts
+01_Theodoret_Letters.zip — 158 individual letters by Theodoret of Cyrus.
+02_Theodoret_Ambrosiaster.zip — 2 additional Theodoret treatises; 3 Ambrosiaster Pauline commentaries.
+03_New_Authors.zip — Theodore of Mopsuestia (1); Leontius of Byzantium (1); Macarius Magnes (1); Aristides the Philosopher (1); Philoxenus of Mabbug (3).
+04_Origen_Severus_Ephrem.zip — Origen's Commentary on Romans, Books 1–10 (10); one anthology of selected letters/excerpts of Severus of Antioch (1); Ephrem's The Pearl: Seven Hymns on the Faith (1).
+05_John_Chrysostom.zip — 19 additional writings and letters.
+
+Total by author
+Theodoret of Cyrus 160 (158 letters + 2 treatises)
+Ambrosiaster 3
+Theodore of Mopsuestia 1
+Leontius of Byzantium 1
+Macarius Magnes 1
+Aristides the Philosopher 1
+Philoxenus of Mabbug 3
+Origen of Alexandria 10
+Severus of Antioch 1 anthology (not 61 full letters)
+Ephrem the Syrian 1
+John Chrysostom 19
+
+Duplicate control
+Built against reading-room-inventory-latest-11-22-26.csv (3,269 catalogue rows). Theodoret's Letter CXIII to Pope Leo was excluded because it was already in the catalogue; Letter CLXXX was excluded because the 1892 source marks its attribution as uncertain. Incoming letters and council documents were not attributed to Theodoret. Existing Nestorius Bazaar of Heracleides materials were not re-added. Candidate title/author matches were checked against the inventory before packaging.
+
+Cleaning and rights
+Each text has the Reading Room metadata header: Title, Author, Date, Translator, Editor, Source Edition, Source URL, Description, Rights Status, Rights Notes. Footnote references and source endnote apparatus were removed where identified; authorial text and meaningful internal headings were retained. Modern copyrighted translations and uncertain attributions were excluded from the batch.
+
+Pelagius
+The inventory contains no work under Pelagius. A source for his Exposition on Galatians has been located (Souter's 1926 Latin edition plus an online English rendering), but it is interleaved with Latin, editorial summaries, Scripture links, and notes. It is not included in these ZIPs pending a clean, complete, verified text extraction. Do not mark Pelagius as imported by this batch.
