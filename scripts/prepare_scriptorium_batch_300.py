@@ -215,6 +215,7 @@ def title_variants(value, author=None):
         x = re.sub(r"\bon catechising of the uninstructed\b", "on catechising the uninstructed", x)
         x = re.sub(r"^a treatise on\b", "on", x)
         x = re.sub(r"^the treatise on\b", "on", x)
+        x = re.sub(r"\bexpositions? on (?:the book of )?psalms?,?\s*psalm\s*(\d+)\b", r"exposition on psalm \1", x)
         expanded.add(x)
     keys = set()
     for item in expanded:
