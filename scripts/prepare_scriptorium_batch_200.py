@@ -39,6 +39,8 @@ def html_to_text(raw):
     soup = BeautifulSoup(raw, "html.parser")
     root = soup.find("article") or soup.body or soup
     for node in list(root.find_all(True)):
+        if getattr(node, "attrs", None) is None:
+            continue
         ident = str(node.get("id") or "").lower()
         classes = " ".join(node.get("class") or []).lower()
         if ident.startswith(("fn", "footnote")) or any(k in classes for k in ("footnote", "endnote", "apparatus", "editorial-note")):
@@ -323,17 +325,9 @@ def add_manual(b):
     ]:
         if (root/rel).is_file(): b.add_single("Rabanus Maurus",title,rel,"A biblical commentary by Rabanus Maurus, kept as a continuous reading text.")
     # Cyril of Alexandria's five-book polemic, treated as one work.
-    rels=[f"Cyril of Alexandria/Five tomes against Nestorius/Book {n}.html" for n in range(1,6)]
-    if all((root/x).is_file() for x in rels):
-        b.add_group("Cyril of Alexandria","Five Tomes Against Nestorius",rels,"Cyril's five-book polemic against Nestorius, combined as one work with book divisions retained.",500)
+    # Cyril's Five Tomes Against Nestorius are already present as five separate published records.
     # Clement's multi-book works; never import individual book leaves as standalone titles.
-    for title, files in [
-        ("The Instructor (Paedagogus), Books I–III",[f"The Instructor Book {n}.html" for n in range(1,4)]),
-        ("The Stromata, Books I–VIII",[f"The Stromata Book {n}.html" for n in range(1,9)]),
-    ]:
-        rels=[f"Clement of Alexandria/{x}" for x in files]
-        if all((root/x).is_file() for x in rels):
-            b.add_group("Clement of Alexandria",title,rels,"Complete surviving multi-book work, presented with original book headings retained.",500)
+    # The Instructor and the Stromata are already present in the latest inventory; do not repackage them.
     # Four Severian translations explicitly released into the public domain.
     docs=[
         ("On Faith and the Natural Law","Severian of Gabala/Homilies/On Faith and the Natural Law/Translation-Sewell-Pearse.doc"),
