@@ -65,12 +65,19 @@ def division(s: str):
     a=roman_int(m.group(2)); b=roman_int(m.group(3)) or a
     return kind,a,b
 
-def variants(s: str) -> set[str]:
+def variants(s: str, author: str | None = None) -> set[str]:
     raw=(s or "").casefold().strip()
     values={raw}
     values.add(re.sub(r"\s*\([^)]*\)", "", raw))
     values.add(re.sub(r"\s*\[[^]]*\]", "", raw))
-    values.add(re.split(r"\s+[—–]\s+", raw, maxsplit=1)[0])
+    if author and re.search(r"\s+[—–]\s+", raw):
+        prefix, suffix = re.split(r"\s+[—–]\s+", raw, maxsplit=1)
+        stop={"the","of","saint","st","pope"}
+        author_tokens=set(norm(author).split())
+        author_tokens.update(norm(ALIASES.get(norm(author), author)).split())
+        suffix_tokens=set(norm(suffix).split())-stop
+        if suffix_tokens and suffix_tokens.issubset(author_tokens):
+            values.add(prefix)
     expanded=set(values)
     for x in list(values):
         x=re.sub(r"\bcommentary on (?:the )?gospel of\b","commentary on",x)
@@ -80,7 +87,6 @@ def variants(s: str) -> set[str]:
         x=re.sub(r"^a treatise on\b","on",x)
         x=re.sub(r"^the treatise on\b","on",x)
         expanded.add(x)
-        expanded.add(re.split(r"\s+[—–]\s+",x,maxsplit=1)[0])
     return {norm(x) for x in expanded if norm(x)}
 
 def base_key(s: str) -> str:
@@ -103,8 +109,8 @@ def is_generic_collection(title: str) -> bool:
     n=norm(title)
     return n in {"letters","epistles","correspondence","homilies","sermons","commentaries","works"}
 
-def title_match(candidate: str, existing: str) -> bool:
-    if variants(candidate) & variants(existing): return True
+def title_match(candidate: str, existing: str, author: str | None = None) -> bool:
+    if variants(candidate, author) & variants(existing, author): return True
     cd,ed=division(candidate),division(existing)
     cb,eb=base_key(candidate),base_key(existing)
     if cb and cb==eb:
@@ -123,6 +129,9 @@ def title_match(candidate: str, existing: str) -> bool:
     # Treat numbered items within an explicitly overlapping range as present.
     if cd and ed and cd[0]==ed[0] and cd[1] is not None and ed[1] is not None:
         if cd[1] >= ed[1] and cd[1] <= ed[2] and cb==eb: return True
+    # Do not fuzzy-match adjacent numbered works or sermons from different years.
+    if re.findall(r"\d+", candidate) != re.findall(r"\d+", existing):
+        return False
     # Conservative fuzzy fallback after punctuation / editor subtitles are removed.
     ca=norm(re.sub(r"\s*\([^)]*\)","",candidate))
     ea=norm(re.sub(r"\s*\([^)]*\)","",existing))
@@ -149,7 +158,7 @@ def main():
     for row in batch:
         ak=author_key(row.get("author",""))
         title=row.get("title","").strip()
-        hits=[old for old in by_author.get(ak,[]) if title_match(title,old)]
+        hits=[old for old in by_author.get(ak,[]) if title_match(title,old,row.get("author",""))]
         if hits:
             inventory_hits.append((row.get("author",""),title,hits))
     batch_hits=[]
@@ -158,7 +167,7 @@ def main():
         ak=author_key(row.get("author",""))
         title=row.get("title","").strip()
         for old in seen[ak]:
-            if title_match(title,old):
+            if title_match(title,old,row.get("author","")):
                 batch_hits.append((row.get("author",""),title,old))
         seen[ak].append(title)
     required=["title","author","source_edition","source_url","words","characters","rights_status","description","rights_notes"]

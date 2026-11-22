@@ -131,15 +131,22 @@ TITLE_EQUIVALENTS = {
     norm("On the Catechising of the Uninstructed"): norm("On Catechising the Uninstructed"),
 }
 
-def title_variants(value):
-    """Generate conservative title variants without erasing distinct work/volume numbers."""
+def title_variants(value, author=None):
+    """Generate conservative title variants while preserving topic, date and volume numbers."""
     raw = clean(value).casefold()
     variants = {raw}
     variants.add(re.sub(r"\s*\([^)]*\)", "", raw))
     variants.add(re.sub(r"\s*\[[^]]*\]", "", raw))
-    # A long title followed by a subtitle frequently has a catalogue counterpart without the subtitle.
-    variants.add(re.split(r"\s+[—–]\s+", raw, maxsplit=1)[0])
-    # Canonicalize frequent cataloguing variants.
+    # Remove a final dash suffix only when it is actually an author attribution.
+    if author and re.search(r"\s+[—–]\s+", raw):
+        prefix, suffix = re.split(r"\s+[—–]\s+", raw, maxsplit=1)
+        stop = {"the", "of", "saint", "st", "pope"}
+        author_tokens = set(norm(author).split())
+        canonical = ALIASES.get(author, author)
+        author_tokens.update(norm(canonical).split())
+        suffix_tokens = set(norm(suffix).split()) - stop
+        if suffix_tokens and suffix_tokens.issubset(author_tokens):
+            variants.add(prefix)
     expanded = set(variants)
     for item in list(variants):
         x = re.sub(r"\bcommentary on (?:the )?gospel of\b", "commentary on", item)
@@ -150,8 +157,6 @@ def title_variants(value):
         x = re.sub(r"^a treatise on\b", "on", x)
         x = re.sub(r"^the treatise on\b", "on", x)
         expanded.add(x)
-        # Treat author names appended after a dash as metadata, not as part of the title.
-        expanded.add(re.split(r"\s+[—–]\s+", x, maxsplit=1)[0])
     keys = set()
     for item in expanded:
         item = re.sub(r"\s+", " ", item).strip(" .,:;—–-")
@@ -206,9 +211,9 @@ def title_base_keys(value):
     key = norm(raw)
     return TITLE_EQUIVALENTS.get(key, key)
 
-def titles_match(candidate, existing):
-    ckeys = title_variants(candidate)
-    ekeys = title_variants(existing)
+def titles_match(candidate, existing, author=None):
+    ckeys = title_variants(candidate, author)
+    ekeys = title_variants(existing, author)
     if ckeys & ekeys:
         return True
 
@@ -235,6 +240,10 @@ def titles_match(candidate, existing):
             if ctype == etype and cnum == int(old.group(2)):
                 # The numbered item itself is the same; don't require the long catalogue subtitle to match.
                 return True
+
+    # Do not fuzzy-match adjacent books, Bible books or years (e.g. 1 Corinthians vs 2 Corinthians).
+    if re.findall(r"\d+", candidate) != re.findall(r"\d+", existing):
+        return False
 
     # Last-resort fuzzy match is stricter than the former 0.88 threshold.
     cflat = norm(re.sub(r"\s*\([^)]*\)", "", candidate))
@@ -297,7 +306,7 @@ class Builder:
     def duplicate(self, author, title):
         ak = author_key(author)
         for old in self.known.get(ak, []):
-            if titles_match(title, old):
+            if titles_match(title, old, author):
                 return True
         # Work-level safeguards for catalogued collections whose title differs from the imported edition.
         existing = self.known.get(ak, [])
@@ -313,10 +322,9 @@ class Builder:
             self.skipped["too_short"] += 1; return False
         if self.duplicate(author, title):
             self.skipped["inventory_duplicate"] += 1; return False
-        key = (author_key(author), min(title_variants(title) or {norm(title)}))
-        if key in self.seen:
+        ak = author_key(author)
+        if any(author_key(item["author"]) == ak and titles_match(title, item["title"], author) for item in self.items):
             self.skipped["batch_duplicate"] += 1; return False
-        self.seen.add(key)
         m = meta or metadata_for(author, rels, title)
         self.items.append({
             "author": author, "title": title, "body": body, "rels": rels,
@@ -708,8 +716,10 @@ def write_outputs(b,out):
     if len(b.items)<TARGET:
         raise RuntimeError(f"Only {len(b.items)} new eligible works passed duplicate and quality checks; need {TARGET}.")
     items=b.items[:TARGET]
-    keys=[(author_key(x["author"]), min(title_variants(x["title"]) or {norm(x["title"])})) for x in items]
-    if len(keys)!=len(set(keys)): raise RuntimeError("Duplicate author/title identity remained.")
+    for i, item in enumerate(items):
+        ak = author_key(item["author"])
+        if any(author_key(old["author"]) == ak and titles_match(item["title"], old["title"], item["author"]) for old in items[:i]):
+            raise RuntimeError(f"Duplicate author/title identity remained: {item['author']} — {item['title']}")
     with (out/"manifest.csv").open("w",encoding="utf-8-sig",newline="") as f:
         fields=["title","author","date","translator","editor","source_edition","source_url","source_files","words","characters","rights_status","description","rights_notes"]
         w=csv.DictWriter(f,fieldnames=fields); w.writeheader()
