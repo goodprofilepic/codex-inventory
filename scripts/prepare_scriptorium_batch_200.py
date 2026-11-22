@@ -278,6 +278,8 @@ def add_manual(b):
             if not child.is_dir() or not child.name.startswith("Commentary on "): continue
             rels = []
             for p in child.glob("*.html"):
+                if p.stem.casefold() in ("preface", "introduction", "index", "contents", "table of contents"):
+                    continue
                 if re.fullmatch(r"(?:Chapter\s+\d+|\d+\s+[A-Za-z]+|[A-Za-z]+)", p.stem, re.I):
                     rels.append(str(p.relative_to(root)).replace("\\","/"))
             rels = sorted(set(rels), key=natural_key)
