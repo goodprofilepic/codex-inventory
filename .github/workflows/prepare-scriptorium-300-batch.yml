@@ -1,0 +1,91 @@
+name: Prepare Scriptorium 300-Work Reading Room Batch
+
+on:
+  push:
+    branches:
+      - codex/strict-inventory-300-2026-11-22
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  prepare-acquisition:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - name: Check out acquisition scripts
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install text extraction tools and parser dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y antiword
+          python -m pip install --disable-pip-version-check beautifulsoup4 requests
+
+      - name: Download public patristic source vault
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -L --fail --retry 3 --retry-delay 2 \
+            "https://codeload.github.com/HistoricalChristianFaith/Writings-Database/zip/refs/heads/master" \
+            -o /tmp/writings-database.zip
+          mkdir -p /tmp/writings-database
+          unzip -q /tmp/writings-database.zip -d /tmp/writings-database
+          SOURCE_DIR="$(find /tmp/writings-database -mindepth 1 -maxdepth 1 -type d | head -n 1)"
+          test -n "$SOURCE_DIR"
+          echo "SOURCE_DIR=$SOURCE_DIR" >> "$GITHUB_ENV"
+
+      - name: Fetch the latest Reading Room inventory from main
+        run: |
+          set -euo pipefail
+          git fetch origin main --depth=1
+          git show FETCH_HEAD:reading-room-inventory-latest-11-22-26.csv > /tmp/reading-room-inventory-latest-11-22-26.csv
+          test -s /tmp/reading-room-inventory-latest-11-22-26.csv
+
+      - name: Retrieve the previous audited 200-work draft manifest
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          curl -L --fail --retry 3 --retry-delay 2 \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/goodprofilepic/codex-inventory/actions/artifacts/14776321465/zip" \
+            -o /tmp/prior-200-artifact.zip
+          unzip -p /tmp/prior-200-artifact.zip manifest.csv > /tmp/prior-200-manifest.csv
+          test -s /tmp/prior-200-manifest.csv
+
+      - name: Build the inventory-screened 300-work batch
+        run: |
+          set -euo pipefail
+          python scripts/prepare_scriptorium_batch_300.py \
+            --source-dir "$SOURCE_DIR" \
+            --inventory-csv /tmp/reading-room-inventory-latest-11-22-26.csv \
+            --prior-batch-manifest /tmp/prior-200-manifest.csv \
+            --output-dir build/scriptorium-reading-room-batch-300
+
+      - name: Independently audit against inventory and prior drafts
+        run: |
+          set -euo pipefail
+          python scripts/verify_scriptorium_batch_300.py \
+            --inventory-csv /tmp/reading-room-inventory-latest-11-22-26.csv \
+            --prior-batch-manifest /tmp/prior-200-manifest.csv \
+            --manifest-csv build/scriptorium-reading-room-batch-300/manifest.csv \
+            --report build/scriptorium-reading-room-batch-300/INDEPENDENT-AUDIT.md
+
+      - name: Upload the ZIP, manifest, README and independent audit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scriptorium-reading-room-batch-300
+          path: build/scriptorium-reading-room-batch-300/
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
