@@ -124,6 +124,7 @@ def variants(s: str, author: str | None = None) -> set[str]:
         x=re.sub(r"\bon the catechising of the uninstructed\b","on catechising the uninstructed",x)
         x=re.sub(r"^a treatise on\b","on",x)
         x=re.sub(r"^the treatise on\b","on",x)
+        x = re.sub(r"\bexpositions? on (?:the book of )?psalms?,?\s*psalm\s*(\d+)\b", r"exposition on psalm \1", x)
         expanded.add(x)
     return {norm(x) for x in expanded if norm(x)}
 
