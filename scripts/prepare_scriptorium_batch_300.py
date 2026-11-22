@@ -141,7 +141,36 @@ ALIASES = {
     "Caius Presbyter of Rome": "Caius of Rome",
     "Vincent of Lerins": "Vincent of Lérins",
     "Archelaus": "Archelaus of Carrhae",
-    "Archelaus of Carrhae": "Archelaus of Carrhae"
+    "Archelaus of Carrhae": "Archelaus of Carrhae",
+    "Augustine": "Augustine of Hippo",
+    "St. Augustine": "Augustine of Hippo",
+    "St Augustine": "Augustine of Hippo",
+    "Chrysostom": "John Chrysostom",
+    "St. John Chrysostom": "John Chrysostom",
+    "St John Chrysostom": "John Chrysostom",
+    "St. Ambrose": "Ambrose of Milan",
+    "St Ambrose": "Ambrose of Milan",
+    "St. Justin Martyr": "Justin Martyr",
+    "St Justin Martyr": "Justin Martyr",
+    "St. Ignatius": "Ignatius of Antioch",
+    "St Ignatius": "Ignatius of Antioch",
+    "Aphrahat": "Aphrahat the Persian Sage",
+    "Gregory Nazianzen": "Gregory of Nazianzus",
+    "Gregory of Nazianzen": "Gregory of Nazianzus",
+    "Tatian": "Tatian the Assyrian",
+    "Hippolytus": "Hippolytus of Rome",
+    "Methodius": "Methodius of Olympus",
+    "Sulpitius Severus": "Sulpicius Severus",
+    "Gennadius of Marseilles": "Gennadius of Massilia",
+    "Victorinus": "Victorinus of Pettau",
+    "Gregory Thaumaturgus": "Gregory of Neocaesarea",
+    "St. Gregory Thaumaturgus": "Gregory of Neocaesarea",
+    "Eusebius": "Eusebius of Caesarea",
+    "Basil": "Basil of Caesarea",
+    "Clemens Alexandrinus": "Clement of Alexandria",
+    "Mar Jacob": "Jacob of Serugh",
+    "Africanus": "Julius Africanus",
+    "St. Leo": "Leo the Great"
 }
 def author_key(a):
     a = (a or "").strip()
@@ -620,6 +649,165 @@ def add_new_author_works(b):
 
     # Maruthas's surviving English witness says it is only part of the whole work; omit it.
 
+def html_to_text_newadvent(raw, title):
+    soup = BeautifulSoup(raw, "html.parser")
+    body = soup.body or soup
+    for node in list(body.find_all(["script", "style", "nav", "header", "footer", "form", "svg", "img"])):
+        node.decompose()
+    for node in list(body.find_all(["p", "div", "table", "a"])):
+        tx = node.get_text(" ", strip=True).casefold()
+        if "please help support the mission of new advent" in tx or "search:" == tx[:7]:
+            node.decompose()
+    wanted = norm(title)
+    heading = None
+    for h in body.find_all(["h1", "h2", "h3"]):
+        txt = norm(h.get_text(" ", strip=True))
+        if wanted and (wanted in txt or txt in wanted):
+            heading = h
+            break
+    if heading is None:
+        heading = body.find(["h1", "h2", "h3"])
+    if heading is not None:
+        def trim_before(node, target):
+            for child in list(node.contents):
+                if child is target:
+                    return True
+                contains = isinstance(child, Tag) and target in child.descendants
+                if contains:
+                    trim_before(child, target)
+                    return True
+                child.extract()
+            return False
+        trim_before(body, heading)
+    # Explicit modern editorial introductions are not part of the primary work.
+    intro = None
+    for h in body.find_all(["h2", "h3", "h4", "b", "strong"]):
+        t = clean(h.get_text(" ", strip=True)).casefold().strip(" .:")
+        if t in {"introduction", "introductory note", "introductory notice", "translator's introduction", "translators introduction", "preface to the online edition", "editor's introduction", "editors introduction"}:
+            intro = h
+            break
+    if intro is not None:
+        # Only remove this page if the main text has a clear following division heading.
+        following = None
+        for h in body.find_all(["h2", "h3", "h4"]):
+            if h is intro:
+                after_intro = True
+                continue
+            if 'after_intro' in locals() and after_intro:
+                if re.match(r"^(?:chapter\\s+|[0-9]+[.)]\\s|[ivxlcdm]+[.)]\\s|letter\\s+|epistle\\s+|homily\\s+|sermon\\s+|demonstration\\s+)", clean(h.get_text(" ", strip=True)), re.I):
+                    following = h
+                    break
+        if following is None:
+            return ""
+        def remove_between(node, start, end):
+            siblings = list(node.contents)
+            if start in siblings and end in siblings:
+                i, j = siblings.index(start), siblings.index(end)
+                for item in siblings[i:j]:
+                    item.extract()
+                return True
+            for child in siblings:
+                if isinstance(child, Tag) and (start in child.descendants or child is start):
+                    if remove_between(child, start, end):
+                        return True
+            return False
+        remove_between(intro.parent, intro, following)
+    return html_to_text(str(body))
+
+
+def add_gap_review_candidates(b, gap_csv):
+    candidates = []
+    with gap_csv.open(encoding="utf-8-sig", newline="") as f:
+        for row in csv.DictReader(f):
+            url = (row.get("source_url") or "").strip().replace("http://", "https://")
+            author = (row.get("author") or "").strip()
+            title = clean(row.get("title") or "")
+            domain = re.match(r"https?://([^/]+)", url, re.I)
+            if not domain or domain.group(1).casefold() != "www.newadvent.org":
+                continue
+            if row.get("comparison_status") != "No exact title/author pair found":
+                continue
+            if row.get("rights_triage") != "candidate_standalone_review":
+                continue
+            if not author or author.casefold() in {"anonymous", "anonymous (early christian community)"}:
+                continue
+            if not title or not re.fullmatch(r"(?:18[0-9]{2}|19[0-2][0-9])", (row.get("edition_year") or "").strip()):
+                continue
+            low = title.casefold()
+            if any(x in low for x in ("fragment", "fragments", "extract", "appendix", "index", "introduction", "preface", "spurious", "dubious", "false decretals")):
+                continue
+            if re.search(r"\\b(?:book|part|volume|chapter)\\s+(?:[0-9]+|[ivxlcdm]+)\\b", low):
+                continue
+            if len(re.findall(r"\\S+", row.get("word_count") or "")) == 0:
+                continue
+            try:
+                words = int(re.sub(r"[^0-9]", "", row.get("word_count") or "0"))
+            except ValueError:
+                continue
+            if words < 1000:
+                continue
+            candidates.append({"author":author,"title":title,"url":url,"row":row,"words":words})
+    # New author identities first, then a round-robin across established authors.
+    grouped = defaultdict(list)
+    for item in candidates:
+        ak = author_key(item["author"])
+        if b.duplicate(item["author"], item["title"]):
+            b.skipped["gap_inventory_duplicate"] += 1
+            continue
+        if any(author_key(x["author"]) == ak and titles_match(item["title"], x["title"], item["author"]) for x in b.items):
+            b.skipped["gap_batch_duplicate"] += 1
+            continue
+        grouped[ak].append(item)
+    for values in grouped.values():
+        values.sort(key=lambda x: (-x["words"], natural_key(x["title"])))
+    known_keys = set(b.known)
+    for item in b.items:
+        known_keys.add(author_key(item["author"]))
+    author_order = sorted(grouped, key=lambda ak: (ak in known_keys, -len(grouped[ak]), ak))
+    ordered = []
+    max_rounds = max((len(grouped[a]) for a in author_order), default=0)
+    for round_no in range(max_rounds):
+        for ak in author_order:
+            if round_no < min(len(grouped[ak]), 18):
+                ordered.append(grouped[ak][round_no])
+    added = 0
+    attempted = 0
+    per_author = defaultdict(int)
+    for item in ordered:
+        if len(b.items) >= TARGET:
+            break
+        ak = author_key(item["author"])
+        if per_author[ak] >= 18:
+            continue
+        attempted += 1
+        try:
+            response = SESSION.get(item["url"], timeout=35)
+            response.raise_for_status()
+            body = html_to_text_newadvent(response.text, item["title"])
+            if not body or len(re.findall(r"\\S+", body)) < 850:
+                b.skipped["gap_incomplete_or_short"] += 1
+                continue
+            row = item["row"]
+            edition_year = row.get("edition_year", "")
+            translator = row.get("translator", "")
+            editor = row.get("editor", "")
+            m = metadata_for(item["author"], [item["url"]], item["title"],
+                             f"A complete standalone Christian historical text by {item['author']}, cleaned from the public-domain New Advent transcription; source introductions and editorial apparatus are omitted where identifiable.")
+            m.update({"date":"Date of composition uncertain; see historical author and source edition",
+                      "translator":translator, "editor":editor,
+                      "edition":f"Public-domain English translation, {edition_year} edition (source credit recorded in the gap inventory)",
+                      "url":item["url"],
+                      "rights_notes":f"The source is a pre-1931 English edition ({edition_year}) hosted in New Advent's Church Fathers collection. The underlying historic translation is public domain. The text was screened for completeness and cleaned to remove site navigation, footnote apparatus, and explicit modern editorial introductions where identifiable."})
+            if b.add(item["author"], item["title"], body, [item["url"]], m, 850):
+                added += 1
+                per_author[ak] += 1
+        except Exception as e:
+            b.skipped["gap_fetch_or_parse_error"] += 1
+            print(f"GAP_CANDIDATE_SKIPPED={item['author']} | {item['title']} | {e}")
+    print(f"GAP_REVIEW_CANDIDATES={len(candidates)}")
+    print(f"GAP_REVIEW_ATTEMPTED={attempted}")
+    print(f"GAP_REVIEW_ADDED={added}")
+    print("GAP_REVIEW_AUTHOR_COUNTS=" + "; ".join(f"{a}:{n}" for a,n in sorted(((next((x['author'] for x in candidates if author_key(x['author'])==ak),ak),v) for ak,v in per_author.items()), key=lambda z:(-z[1],z[0]))))
 def add_gap_fillers(b):
     root = b.root
 
@@ -908,11 +1096,13 @@ def main():
     p.add_argument("--inventory-csv",required=True,type=Path)
     p.add_argument("--output-dir",required=True,type=Path)
     p.add_argument("--prior-batch-manifest",required=True,type=Path)
+    p.add_argument("--gap-review-csv",required=True,type=Path)
     a=p.parse_args()
     b=Builder(a.source_dir,a.inventory_csv,a.prior_batch_manifest)
     add_pelagius(b)
     add_manual(b)
     add_new_author_works(b)
+    add_gap_review_candidates(b,a.gap_review_csv)
     add_gap_fillers(b)
     build_auto(b)
     print(f"ELIGIBLE_BEFORE_TRIM={len(b.items)}")
