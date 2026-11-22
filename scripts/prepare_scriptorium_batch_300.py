@@ -607,7 +607,7 @@ def add_new_author_works(b):
             return False
         trim_before(container, marker)
         body = html_to_text(str(container))
-        meta = metadata_for("Alexander of Lycopolis", [], "Of the Manicheans",
+        meta = metadata_for("Alexander of Lycopolis", ["New Advent: Church Fathers 0618"], "Of the Manicheans",
                             "Alexander of Lycopolis's surviving treatise examining Manichaean teaching, in the 1886 Ante-Nicene Fathers translation.")
         meta.update({"date":"early fourth century (c. AD 301)", "translator":"James B. H. Hawkins",
                      "editor":"Alexander Roberts, James Donaldson, and A. Cleveland Coxe",
