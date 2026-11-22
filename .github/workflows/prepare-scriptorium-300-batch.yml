@@ -62,6 +62,14 @@ jobs:
           unzip -p /tmp/prior-200-artifact.zip manifest.csv > /tmp/prior-200-manifest.csv
           test -s /tmp/prior-200-manifest.csv
 
+      - name: Download screened public-domain gap review
+        run: |
+          set -euo pipefail
+          curl -L --fail --retry 3 --retry-delay 2 \
+            "https://raw.githubusercontent.com/goodprofilepic/codex-inventory/codex/strict-inventory-200-2026-11-22/codex-reading-room-gap-review.csv" \
+            -o /tmp/codex-reading-room-gap-review.csv
+          test -s /tmp/codex-reading-room-gap-review.csv
+
       - name: Build the inventory-screened 300-work batch
         run: |
           set -euo pipefail
@@ -69,6 +77,7 @@ jobs:
             --source-dir "$SOURCE_DIR" \
             --inventory-csv /tmp/reading-room-inventory-latest-11-22-26.csv \
             --prior-batch-manifest /tmp/prior-200-manifest.csv \
+            --gap-review-csv /tmp/codex-reading-room-gap-review.csv \
             --output-dir build/scriptorium-reading-room-batch-300
 
       - name: Independently audit against inventory and prior drafts
