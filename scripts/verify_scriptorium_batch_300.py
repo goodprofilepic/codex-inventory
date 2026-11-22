@@ -67,6 +67,8 @@ ALIASES = {
     "st ignatius": "ignatius of antioch",
     "bardesanes": "bardaisan of edessa dialogue recorded by philip attribution qualified",
     "bardaisan": "bardaisan of edessa dialogue recorded by philip attribution qualified",
+    "clement": "clement of rome",
+    "venantius": "venantius fortunatus",
 }
 
 def norm(s: str) -> str:
@@ -129,6 +131,10 @@ def variants(s: str, author: str | None = None) -> set[str]:
         x = re.sub(r"\bexpositions? on (?:the book of )?psalms?,?\s*psalm\s*(\d+)\b", r"exposition on psalm \1", x)
         x = re.sub(r"^the\s+", "", x)
         x = re.sub(r"\bdisputation with (?:the )?heresiarch manes\b", "disputation with manes", x)
+        x = re.sub(r"^the\s+", "", x)
+        x = re.sub(r"\bdisputation with (?:the )?heresiarch manes\b", "disputation with manes", x)
+        if author and author_key(author) == author_key("Clement of Rome") and "letter to the corinthians" in x:
+            expanded.add("first epistle of clement to the corinthians")
         expanded.add(x)
     return {norm(x) for x in expanded if norm(x)}
 
