@@ -172,6 +172,8 @@ ALIASES = {
     "Africanus": "Julius Africanus",
     "St. Leo": "Leo the Great",
     "Bardesanes": "Bardaisan of Edessa (dialogue recorded by Philip; attribution qualified)",
+    "Clement": "Clement of Rome",
+    "Venantius": "Venantius Fortunatus",
     "Bardaisan": "Bardaisan of Edessa (dialogue recorded by Philip; attribution qualified)"
 }
 def author_key(a):
@@ -220,6 +222,8 @@ def title_variants(value, author=None):
         x = re.sub(r"\bexpositions? on (?:the book of )?psalms?,?\s*psalm\s*(\d+)\b", r"exposition on psalm \1", x)
         x = re.sub(r"^the\s+", "", x)
         x = re.sub(r"\bdisputation with (?:the )?heresiarch manes\b", "disputation with manes", x)
+        if author and author_key(author) == author_key("Clement of Rome") and "letter to the corinthians" in x:
+            expanded.add("first epistle of clement to the corinthians")
         expanded.add(x)
     keys = set()
     for item in expanded:
@@ -734,7 +738,14 @@ def add_gap_review_candidates(b, gap_csv):
                 continue
             if row.get("rights_triage") != "candidate_standalone_review":
                 continue
-            if not author or author.casefold() in {"anonymous", "anonymous (early christian community)", "symmachus", "mara bar serapion", "dionysius"}:
+            if not author or author.casefold() in {"anonymous", "anonymous (early christian community)", "symmachus", "mara bar serapion", "dionysius", "tertullian", "theodotus"}:
+                continue
+            if author.casefold() == "clement" and title.casefold() == "two epistles on virginity":
+                author = "Pseudo-Clement"
+                title = "Two Epistles on Virginity (Pseudo-Clementine)"
+            if author.casefold() == "pseudo-clement" and title.casefold() == "the second epistle":
+                title = "Second Epistle of Clement to the Corinthians"
+            if title.casefold() == "history of armenia" or title.casefold() == "clementine homilies, introductory epistles":
                 continue
             if not title or not re.fullmatch(r"(?:18[0-9]{2}|19[0-2][0-9])", (row.get("edition_year") or "").strip()):
                 continue
