@@ -58,6 +58,7 @@ jobs:
             --manifest-csv build/scriptorium-reading-room-batch-200/manifest.csv \
             --report build/scriptorium-reading-room-batch-200/INDEPENDENT-AUDIT.md
       - name: Upload the ZIP, manifest, README and independent audit
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: scriptorium-reading-room-batch-200

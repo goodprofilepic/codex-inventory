@@ -198,6 +198,10 @@ def main():
     print(f"AUDIT_INVENTORY_DUPLICATES={len(inventory_hits)}")
     print(f"AUDIT_WITHIN_BATCH_DUPLICATES={len(batch_hits)}")
     print(f"AUDIT_MISSING_METADATA={len(missing_metadata)}")
+    for author,title,hits in inventory_hits:
+        print(f"INVENTORY_DUPLICATE={author} | {title} | MATCHES={'; '.join(hits)}")
+    for author,title,old in batch_hits:
+        print(f"BATCH_DUPLICATE={author} | {title} | MATCHES={old}")
     if len(batch)!=200 or inventory_hits or batch_hits or missing_metadata:
         raise SystemExit("Independent audit failed; inspect the report before import.")
 
