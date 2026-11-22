@@ -703,7 +703,7 @@ def html_to_text_newadvent(raw, title):
                 after_intro = True
                 continue
             if 'after_intro' in locals() and after_intro:
-                if re.match(r"^(?:chapter\\s+|[0-9]+[.)]\\s|[ivxlcdm]+[.)]\\s|letter\\s+|epistle\\s+|homily\\s+|sermon\\s+|demonstration\\s+)", clean(h.get_text(" ", strip=True)), re.I):
+                if re.match(r"^(?:chapter\s+|[0-9]+[.)]\s|[ivxlcdm]+[.)]\s|letter\s+|epistle\s+|homily\s+|sermon\s+|demonstration\s+)", clean(h.get_text(" ", strip=True)), re.I):
                     following = h
                     break
         if following is None:
@@ -752,9 +752,9 @@ def add_gap_review_candidates(b, gap_csv):
             low = title.casefold()
             if any(x in low for x in ("fragment", "fragments", "extract", "appendix", "index", "introduction", "preface", "spurious", "dubious", "false decretals")):
                 continue
-            if re.search(r"\\b(?:book|part|volume|chapter)\\s+(?:[0-9]+|[ivxlcdm]+)\\b", low):
+            if re.search(r"\b(?:book|part|volume|chapter)\s+(?:[0-9]+|[ivxlcdm]+)\b", low):
                 continue
-            if len(re.findall(r"\\S+", row.get("word_count") or "")) == 0:
+            if len(re.findall(r"\S+", row.get("word_count") or "")) == 0:
                 continue
             try:
                 words = int(re.sub(r"[^0-9]", "", row.get("word_count") or "0"))
@@ -800,7 +800,7 @@ def add_gap_review_candidates(b, gap_csv):
             response = SESSION.get(item["url"], timeout=35)
             response.raise_for_status()
             body = html_to_text_newadvent(response.text, item["title"])
-            if not body or len(re.findall(r"\\S+", body)) < 850:
+            if not body or len(re.findall(r"\S+", body)) < 850:
                 b.skipped["gap_incomplete_or_short"] += 1
                 continue
             row = item["row"]
