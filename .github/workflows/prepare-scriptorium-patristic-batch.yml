@@ -51,7 +51,13 @@ jobs:
             --source-dir "$SOURCE_DIR" \
             --inventory-csv /tmp/reading-room-inventory-latest-11-22-26.csv \
             --output-dir build/scriptorium-reading-room-batch-200
-      - name: Upload the ZIP, manifest and README
+      - name: Independently audit manifest against the latest inventory
+        run: |
+          python scripts/verify_scriptorium_batch.py \
+            --inventory-csv /tmp/reading-room-inventory-latest-11-22-26.csv \
+            --manifest-csv build/scriptorium-reading-room-batch-200/manifest.csv \
+            --report build/scriptorium-reading-room-batch-200/INDEPENDENT-AUDIT.md
+      - name: Upload the ZIP, manifest, README and independent audit
         uses: actions/upload-artifact@v4
         with:
           name: scriptorium-reading-room-batch-200
