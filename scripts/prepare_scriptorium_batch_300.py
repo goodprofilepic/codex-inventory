@@ -580,6 +580,9 @@ def source_path_key(value):
         return ""
     if "://" in value:
         path = urlparse(value).path
+        # GitHub tree URLs identify directories/collections, not unique source files.
+        if "/tree/" in path:
+            return ""
         for marker in ("/blob/master/", "/master/"):
             if marker in path:
                 value = path.split(marker, 1)[1]
