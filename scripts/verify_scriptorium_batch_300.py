@@ -94,7 +94,17 @@ def author_key(s: str) -> str:
 
 
 def global_title_key(value: str) -> str:
-    return re.sub(r"^(?:the|a|an)", "", norm(value or ""))
+    key = re.sub(r"^(?:the|a|an)", "", norm(value or ""))
+    # Known title variants across anonymous/pseudonymous catalogue labels.
+    if "protevangelium" in key or "protoevangelium" in key:
+        return "protoevangeliumofjames"
+    if "perpetua" in key and "felicit" in key:
+        return "passionofperpetuaandfelicity"
+    if "liturgy" in key and "james" in key:
+        return "liturgyofsaintjames"
+    if "liturgy" in key and "mark" in key and ("apostle" in key or "saint" in key):
+        return "liturgyofsaintmark"
+    return key
 
 
 def source_path_key(value: str) -> str:
