@@ -136,7 +136,56 @@ def variants(s: str, author: str | None = None) -> set[str]:
         if author and author_key(author) == author_key("Clement of Rome") and "letter to the corinthians" in x:
             expanded.add("first epistle of clement to the corinthians")
         expanded.add(x)
-    return {norm(x) for x in expanded if norm(x)}
+    def roman_to_arabic(match):
+        value = match.group(2).casefold()
+        vals = {"i":1,"v":5,"x":10,"l":50,"c":100,"d":500,"m":1000}
+        total=0; prev=0
+        for ch in reversed(value):
+            n=vals[ch]
+            total += -n if n < prev else n
+            prev=max(prev,n)
+        return f"{match.group(1)} {total}"
+    final=set()
+    for x in list(expanded):
+        x=re.sub(r"\\b(book|part|volume|discourse|homily|homilies|oration|letter|epistle)\\s+([ivxlcdm]+)\\b",roman_to_arabic,x)
+        final.add(x)
+        pm=re.search(r"\\(\\s*(oration|homily|book|discourse|letter|epistle)\\s+([0-9]+|[ivxlcdm]+)\\s*\\)",x)
+        if pm:
+            n=roman_to_arabic(pm) if not pm.group(2).isdigit() else f"{pm.group(1)} {pm.group(2)}"
+            final.add(n)
+    keys={norm(x) for x in final if norm(x)}
+    equiv={
+        norm("Of Two Souls"):norm("Concerning Two Souls, Against the Manichaeans"),
+        norm("Care of the Dead"):norm("On Care to Be Had for the Dead"),
+        norm("A Treatise on the Care of the Dead"):norm("On Care to Be Had for the Dead"),
+        norm("Handbook on Faith, Hope and Love"):norm("Enchiridion"),
+        norm("The Paedagogus"):norm("The Instructor"),
+        norm("Paedagogus"):norm("The Instructor"),
+        norm("The Stromata"):norm("The Stromata, or Miscellanies"),
+        norm("On the Sovereignty of God"):norm("On the Sole Government of God"),
+        norm("The Sovereignty of God"):norm("On the Sole Government of God"),
+        norm("First Apology"):norm("The First Apology of Justin"),
+        norm("The First Apology"):norm("The First Apology of Justin"),
+        norm("Apologia ad Constantium"):norm("Defence Before Constantius"),
+        norm("Correspondence with Pope Innocent I"):norm("Correspondence with Innocent, Bishop of Rome"),
+        norm("Fifth Theological Oration"):norm("Oration 31"),
+        norm("The Fifth Theological Oration"):norm("Oration 31"),
+        norm("First Theological Oration"):norm("Oration 27"),
+        norm("The First Theological Oration"):norm("Oration 27"),
+        norm("On Two Souls"):norm("Concerning Two Souls, Against the Manichaeans"),
+        norm("Care for the Dead"):norm("On Care to Be Had for the Dead"),
+        norm("Enchiridion"):norm("Handbook on Faith, Hope and Love"),
+        norm("On the Instructor"):norm("The Instructor"),
+        norm("Stromata"):norm("The Stromata, or Miscellanies"),
+        norm("De Monarchia"):norm("On the Sole Government of God"),
+        norm("Apologia de Fuga"):norm("Defence of His Flight"),
+        norm("De Sententia Dionysii"):norm("On the Opinion of Dionysius"),
+        norm("Ad Episcopus Aegypti et Libyae"):norm("To the Bishops of Egypt"),
+        norm("Ad Afros Epistola Synodica"):norm("To the Bishops of Africa"),
+        norm("De Spiritu Sancto"):norm("On the Holy Spirit"),
+    }
+    keys.update(equiv[k] for k in list(keys) if k in equiv)
+    return keys
 
 def base_key(s: str) -> str:
     x=(s or "").casefold()
