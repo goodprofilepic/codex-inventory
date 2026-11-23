@@ -618,6 +618,12 @@ def source_is_known_compound(author, candidate, existing):
         return True
     if ak == author_key("Cyprian of Carthage") and re.search(r"\btreatise\s*12\b", candidate, re.I) and re.search(r"\btreatise\s*12\b", existing, re.I):
         return True
+    if ak == author_key("Lactantius") and "workmanship of god" in c and "workmanship of god" in e:
+        return True
+    if ak == author_key("Cyprian of Carthage") and any(x in c for x in ("baptism of heretics","seventh council of carthage")) and any(x in e for x in ("baptism of heretics","seventh council of carthage")):
+        return True
+    if ak == author_key("Gregory the Great") and "dialogues" in c and "dialogues" in e:
+        return True
     if ak == author_key("Basil of Caesarea"):
         if "hexaemeron" in c and "hexaemeron" in e and numbered_series_signature(candidate)==numbered_series_signature(existing):
             return True
@@ -706,6 +712,9 @@ class Builder:
         # Keep this Reading Room batch focused on complete writings rather than
         # separately catalogued fragments or sermon excerpts.
         if re.search(r"\bfragments?\b", title, re.I) or "[FRAGMENT]" in body.upper():
+            self.skipped["fragment_or_excerpt"] += 1
+            return False
+        if author_key(author) == author_key("Methodius of Olympus") and "banquet of the ten virgins" in title.casefold() and re.search(r"\bdiscourse\s*4\b", title, re.I):
             self.skipped["fragment_or_excerpt"] += 1
             return False
         if re.search(r"\b(?:dubious and spurious pieces|quotes on revelation|book\s*2\s*\(start\)|praefatio|from the discourse on the resurrection|new documents on philoxenus)\b", title, re.I):
