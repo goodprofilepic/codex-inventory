@@ -463,6 +463,9 @@ def work_overlap(candidate, existing, author=None):
     if ak == author_key("Lactantius"):
         if "workmanship of god" in c and "workmanship of god" in e:
             return True
+    if ak == author_key("Eusebius of Caesarea"):
+        if "constantine" in c and "constantine" in e and "oration" in c and "oration" in e:
+            return True
     if ak == author_key("Basil of Caesarea"):
         if "on the spirit" in c and ("holy spirit" in e or "spiritus sancto" in e):
             return True
