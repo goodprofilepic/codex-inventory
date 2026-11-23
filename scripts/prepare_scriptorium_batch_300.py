@@ -3,6 +3,7 @@
 from __future__ import annotations
 import argparse, csv, html, re, unicodedata, zipfile, tomllib, subprocess
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from difflib import SequenceMatcher
 from pathlib import Path
 from urllib.parse import quote, urljoin
@@ -789,17 +790,34 @@ def add_gap_review_candidates(b, gap_csv):
     added = 0
     attempted = 0
     per_author = defaultdict(int)
-    for item in ordered:
+    # Fetch a bounded candidate window concurrently, then preserve round-robin order
+    # for deterministic author balance and titles in the final batch.
+    fetch_window = ordered[:360]
+    fetched = {}
+    def fetch_page(item):
+        try:
+            response = requests.get(item["url"], timeout=35, headers={"User-Agent":"Scriptorium-reading-room-acquisition/1.0"})
+            response.raise_for_status()
+            return response.text, None
+        except Exception as exc:
+            return None, exc
+    with ThreadPoolExecutor(max_workers=18) as pool:
+        futures = {pool.submit(fetch_page, item): item for item in fetch_window}
+        for future in as_completed(futures):
+            fetched[id(futures[future])] = future.result()
+    for item in fetch_window:
         if len(b.items) >= TARGET:
             break
         ak = author_key(item["author"])
         if per_author[ak] >= 18:
             continue
         attempted += 1
+        raw, fetch_error = fetched.get(id(item), (None, RuntimeError("missing concurrent fetch result")))
+        if fetch_error is not None:
+            b.skipped["gap_fetch_or_parse_error"] += 1
+            continue
         try:
-            response = SESSION.get(item["url"], timeout=35)
-            response.raise_for_status()
-            body = html_to_text_newadvent(response.text, item["title"])
+            body = html_to_text_newadvent(raw, item["title"])
             if not body or len(re.findall(r"\S+", body)) < 850:
                 b.skipped["gap_incomplete_or_short"] += 1
                 continue
