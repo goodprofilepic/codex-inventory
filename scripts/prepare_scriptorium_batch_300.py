@@ -193,6 +193,23 @@ TITLE_EQUIVALENTS = {
     norm("Of the Work of Monks"): norm("On the Work of Monks"),
     norm("Of Holy Virginity"): norm("On Holy Virginity"),
     norm("On the Catechising of the Uninstructed"): norm("On Catechising the Uninstructed"),
+    norm("Of Two Souls"): norm("Concerning Two Souls, Against the Manichaeans"),
+    norm("Care of the Dead"): norm("On Care to Be Had for the Dead"),
+    norm("A Treatise on the Care of the Dead"): norm("On Care to Be Had for the Dead"),
+    norm("Handbook on Faith, Hope and Love"): norm("Enchiridion"),
+    norm("The Paedagogus"): norm("The Instructor"),
+    norm("Paedagogus"): norm("The Instructor"),
+    norm("The Stromata"): norm("The Stromata, or Miscellanies"),
+    norm("On the Sovereignty of God"): norm("On the Sole Government of God"),
+    norm("The Sovereignty of God"): norm("On the Sole Government of God"),
+    norm("First Apology"): norm("The First Apology of Justin"),
+    norm("The First Apology"): norm("The First Apology of Justin"),
+    norm("Apologia ad Constantium"): norm("Defence Before Constantius"),
+    norm("Correspondence with Pope Innocent I"): norm("Correspondence with Innocent, Bishop of Rome"),
+    norm("The Fifth Theological Oration"): norm("Oration 31"),
+    norm("Fifth Theological Oration"): norm("Oration 31"),
+    norm("The First Theological Oration"): norm("Oration 27"),
+    norm("First Theological Oration"): norm("Oration 27"),
 }
 
 def title_variants(value, author=None):
@@ -221,6 +238,20 @@ def title_variants(value, author=None):
         x = re.sub(r"^a treatise on\b", "on", x)
         x = re.sub(r"^the treatise on\b", "on", x)
         x = re.sub(r"\bexpositions? on (?:the book of )?psalms?,?\s*psalm\s*(\d+)\b", r"exposition on psalm \1", x)
+        def roman_to_arabic(match):
+            value = match.group(2).lower()
+            vals = {"i":1,"v":5,"x":10,"l":50,"c":100,"d":500,"m":1000}
+            total = 0; prev = 0
+            for ch in reversed(value):
+                n = vals[ch]
+                total += -n if n < prev else n
+                prev = max(prev, n)
+            return f"{match.group(1)} {total}"
+        x = re.sub(r"\b(book|part|volume|discourse|homily|homilies|oration|letter|epistle)\s+([ivxlcdm]+)\b", roman_to_arabic, x)
+        paren_num = re.search(r"\(\s*(oration|homily|book|discourse|letter|epistle)\s+([0-9]+|[ivxlcdm]+)\s*\)", x)
+        if paren_num:
+            number = roman_to_arabic(paren_num) if not paren_num.group(2).isdigit() else f"{paren_num.group(1)} {paren_num.group(2)}"
+            expanded.add(number)
         x = re.sub(r"^the\s+", "", x)
         x = re.sub(r"\bdisputation with (?:the )?heresiarch manes\b", "disputation with manes", x)
         if author and author_key(author) == author_key("Clement of Rome") and "letter to the corinthians" in x:
@@ -764,7 +795,9 @@ def add_gap_review_candidates(b, gap_csv):
             low = title.casefold()
             if any(x in low for x in ("fragment", "fragments", "extract", "appendix", "index", "introduction", "preface", "spurious", "dubious", "false decretals")):
                 continue
-            if re.search(r"\b(?:book|part|volume|chapter)\s+(?:[0-9]+|[ivxlcdm]+)\b", low):
+            if re.search(r"\b(?:book|part|volume|chapter|section|sections|chapters)\s+(?:[0-9]+|[ivxlcdm]+)\b", low):
+                continue
+            if re.search(r"\bchapters?\s+[0-9]+\s*[-–—]\s*[0-9]+\b", low):
                 continue
             if len(re.findall(r"\S+", row.get("word_count") or "")) == 0:
                 continue
