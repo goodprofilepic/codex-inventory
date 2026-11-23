@@ -5,6 +5,7 @@ import argparse, csv, re, unicodedata
 from collections import defaultdict
 from difflib import SequenceMatcher
 from pathlib import Path
+from urllib.parse import unquote, urlparse
 
 ALIASES = {
     "tertullian": "tertullian of carthage",
@@ -38,6 +39,8 @@ ALIASES = {
     "caius presbyter of rome": "caius of rome",
     "vincent of lerins": "vincent of lerins",
     "archelaus": "archelaus of carrhae",
+    "hegemonius": "archelaus of carrhae",
+    "macarius of egypt": "pseudo-macarius",
     "archelaus of carrhae": "archelaus of carrhae",
     "asterius of amasea": "asterius of amasea bishop of amasia",
     "macarius of egypt": "pseudo-macarius",
@@ -88,6 +91,79 @@ def norm(s: str) -> str:
 def author_key(s: str) -> str:
     n = norm(s)
     return norm(ALIASES.get(n, n))
+
+
+def source_path_key(value: str) -> str:
+    value = unquote(str(value or "")).replace("\\", "/").strip()
+    if not value:
+        return ""
+    if "://" in value:
+        path = urlparse(value).path
+        for marker in ("/blob/master/", "/master/"):
+            if marker in path:
+                value = path.split(marker, 1)[1]
+                break
+        else:
+            value = path
+    value = value.split("?", 1)[0].split("#", 1)[0].strip("/")
+    return re.sub(r"[^a-z0-9]+", "", unicodedata.normalize("NFKD", value).encode("ascii", "ignore").decode().casefold())
+
+def numbered_series_signature(value: str):
+    raw = (value or "").casefold()
+    patterns = [
+        (r"\bconference\s*([0-9]+|[ivxlcdm]+)\b", "conference"),
+        (r"^\s*([0-9]+)\.\s*(?:the\s+)?(?:first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|\w+)\s+conference\b", "conference"),
+        (r"\b(treatise|epistle|letter|sermon|homily|demonstration|oration|dialogue)\s*([0-9]+|[ivxlcdm]+)\b", None),
+    ]
+    roman={"i":1,"v":5,"x":10,"l":50,"c":100,"d":500,"m":1000}
+    def integer(v):
+        if v.isdigit(): return int(v)
+        total=0; prev=0
+        for c in reversed(v):
+            n=roman.get(c,0); total += -n if n < prev else n; prev=max(prev,n)
+        return total
+    for pattern,fixed in patterns:
+        m=re.search(pattern,raw,re.I)
+        if not m: continue
+        if fixed: return fixed,integer(m.group(1))
+        kind=m.group(1).casefold()
+        if kind in ("letter","epistle"): kind="epistle"
+        return kind,integer(m.group(2))
+    return None
+
+def special_overlap(candidate: str, existing: str, author: str | None = None) -> bool:
+    ak=author_key(author or "")
+    c=(candidate or "").casefold()
+    e=(existing or "").casefold()
+    if ak == author_key("Pseudo-Macarius") and "fifty spiritual homilies" in c and "fifty spiritual homilies" in e:
+        return True
+    if ak == author_key("Aphrahat the Persian Sage") and "demonstrations" in e and "demonstration" in c:
+        return True
+    if ak == author_key("Cyprian of Carthage"):
+        if re.search(r"\btreatise\s*12\b",c) and re.search(r"\btreatise\s*12\b",e):
+            return True
+        if any(x in c for x in ("seventh council of carthage","baptism of heretics")) and any(x in e for x in ("seventh council of carthage","baptism of heretics")):
+            return True
+    if ak == author_key("Aristides of Athens") and "apology" in c and "apology" in e:
+        return True
+    if ak == author_key("Lactantius") and "workmanship of god" in c and "workmanship of god" in e:
+        return True
+    if ak == author_key("Basil of Caesarea") and "on the spirit" in c and "holy spirit" in e:
+        return True
+    if ak == author_key("Ignatius of Antioch"):
+        def simple(x):
+            x=re.sub(r"^(?:epistle\s+to\s+|ignatius\s+to\s+|to\s+)", "", x.strip())
+            x=re.sub(r"\s*(?:\(|—|-)?\s*(?:longer recension|syriac version)\)?$", "", x).strip()
+            return norm(x)
+        if simple(c)==simple(e): return True
+    stripped=re.sub(r"^\s*sermon\s+\d+\s*[-:—–]*\s*", "", c, flags=re.I)
+    if stripped and norm(stripped)==norm(e):
+        return True
+    if ak == author_key("Sulpicius Severus"):
+        def conv(x):
+            return re.sub(r"\bdialogue\s+(i|ii|iii)\b", lambda m:"dialogue "+str({"i":1,"ii":2,"iii":3}[m.group(1)]), x)
+        if norm(conv(c))==norm(conv(e)): return True
+    return False
 
 def roman_int(v: str) -> int | None:
     if not v: return None
@@ -274,6 +350,7 @@ def work_overlap(candidate: str, existing: str, author: str | None = None) -> bo
     return False
 
 def title_match(candidate: str, existing: str, author: str | None = None) -> bool:
+    if special_overlap(candidate, existing, author): return True
     if work_overlap(candidate, existing, author):
         return True
     if variants(candidate, author) & variants(existing, author): return True
@@ -334,21 +411,47 @@ def main():
         ak=author_key(row.get("author",""))
         title=row.get("title","").strip()
         if ak and title: by_author[ak].append(title)
+    inventory_paths=defaultdict(list)
+    for row in inv:
+        key=source_path_key(row.get("source_url",""))
+        if key: inventory_paths[key].append(f'{row.get("attributed_author","")} — {row.get("title","")}')
+    prior_paths=defaultdict(list)
+    for row in prior:
+        vals=[row.get("source_url",""), *(row.get("source_files","") or "").split(";")]
+        for value in vals:
+            key=source_path_key(value)
+            if key: prior_paths[key].append(f'{row.get("author","")} — {row.get("title","")}')
     inventory_hits=[]
     for row in batch:
         ak=author_key(row.get("author",""))
         title=row.get("title","").strip()
-        hits=[old for old in by_author.get(ak,[]) if title_match(title,old,row.get("author",""))]
+        path_values=[row.get("source_url",""), *(row.get("source_files","") or "").split(";")]
+        path_matches=[]
+        for value in path_values:
+            key=source_path_key(value)
+            if key:
+                path_matches += inventory_paths.get(key,[]) + prior_paths.get(key,[])
+        title_matches=[old for old in by_author.get(ak,[]) if title_match(title,old,row.get("author",""))]
+        hits=sorted(set(path_matches + title_matches))
         if hits:
             inventory_hits.append((row.get("author",""),title,hits))
     batch_hits=[]
     seen=defaultdict(list)
+    seen_paths={}
     for row in batch:
         ak=author_key(row.get("author",""))
         title=row.get("title","").strip()
         for old in seen[ak]:
-            if title_match(title,old,row.get("author","")):
+            sig=numbered_series_signature(title)
+            old_sig=numbered_series_signature(old)
+            if title_match(title,old,row.get("author","")) or special_overlap(title,old,row.get("author","")) or (sig and sig==old_sig):
                 batch_hits.append((row.get("author",""),title,old))
+        for value in [row.get("source_url",""), *(row.get("source_files","") or "").split(";")]:
+            key=source_path_key(value)
+            if key and key in seen_paths:
+                batch_hits.append((row.get("author",""),title,seen_paths[key]))
+            elif key:
+                seen_paths[key]=f'{row.get("author","")} — {title}'
         seen[ak].append(title)
     required=["title","author","source_edition","source_url","words","characters","rights_status","description","rights_notes"]
     missing_metadata=[]
@@ -362,8 +465,8 @@ def main():
         f"- Inventory entries checked: {len(inv)}",
         f"- Batch manifest entries checked: {len(batch)}",
         f"- Previous 200-draft manifest entries checked: {len(prior)}",
-        f"- Inventory or previous-batch author/title matches: {len(inventory_hits)}",
-        f"- Within-batch author/title duplicates: {len(batch_hits)}",
+        f"- Inventory/prior-batch title OR source-path matches: {len(inventory_hits)}",
+        f"- Within-batch title OR source-path duplicates: {len(batch_hits)}",
         f"- Missing required metadata fields: {len(missing_metadata)}",
         "",
     ]
@@ -380,7 +483,7 @@ def main():
         for i,title,fields in missing_metadata:
             report.append(f"- Row {i}: {title}: {', '.join(fields)}")
     if not inventory_hits and not batch_hits and not missing_metadata:
-        report.append("PASS — no duplicate title/author identities or missing required metadata were detected.")
+        report.append("PASS — no duplicate title/author identities, source-path identities, or missing required metadata were detected.")
     args.report.parent.mkdir(parents=True,exist_ok=True)
     args.report.write_text("\n".join(report)+"\n",encoding="utf-8")
     print(f"AUDIT_INVENTORY_ROWS={len(inv)}")
