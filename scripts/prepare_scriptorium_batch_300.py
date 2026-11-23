@@ -624,15 +624,15 @@ def numbered_series_signature(value):
 def source_is_known_compound(author, candidate, existing):
     ak=author_key(author)
     c=norm(candidate); e=norm(existing)
-    if ak == author_key("Pseudo-Macarius") and "fifty spiritual homilies" in c and "fifty spiritual homilies" in e:
+    if ak == author_key("Pseudo-Macarius") and "fiftyspiritualhomilies" in c and "fiftyspiritualhomilies" in e:
         return True
     if ak == author_key("Aphrahat the Persian Sage") and "demonstrations" in e and re.search(r"\bdemonstration\s+[0-9]+\b", candidate, re.I):
         return True
     if ak == author_key("Cyprian of Carthage") and re.search(r"\btreatise\s*12\b", candidate, re.I) and re.search(r"\btreatise\s*12\b", existing, re.I):
         return True
-    if ak == author_key("Lactantius") and "workmanship of god" in c and "workmanship of god" in e:
+    if ak == author_key("Lactantius") and "workmanshipofgod" in c and "workmanshipofgod" in e:
         return True
-    if ak == author_key("Cyprian of Carthage") and any(x in c for x in ("baptism of heretics","seventh council of carthage")) and any(x in e for x in ("baptism of heretics","seventh council of carthage")):
+    if ak == author_key("Cyprian of Carthage") and any(x in c for x in ("baptismofheretics","seventhcouncilofcarthage")) and any(x in e for x in ("baptismofheretics","seventhcouncilofcarthage")):
         return True
     if ak == author_key("Gregory the Great") and "dialogues" in c and "dialogues" in e:
         return True
