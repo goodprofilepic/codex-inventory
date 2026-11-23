@@ -1443,6 +1443,131 @@ def build_auto(b):
             except Exception as e:
                 print(f"AUTO_SKIPPED={rel}: {e}")
 
+
+def build_extended_source_pool(b):
+    """Fill the remaining slots from complete, nonduplicate texts across the source vault."""
+    root=b.root
+    skip_top={
+        "Thomas Aquinas","Bonaventure","Theophylact of Ohrid","Shepherd of Hermas",
+        "Didache","Epistle of Barnabas","Epistle to Diognetus","Optatus of Milevis",
+        "Eugippius","John of Ephesus","Rabbula","Shenoute the Archimandrite",
+        "Pachomius the Great"
+    }
+    blocked=(
+        "/fragments","/doubtful","/spurious","preface","introduction","translator",
+        "appendix","footnote","index","table of","title page","bibliography",
+        "errata","missing portion","new documents on philoxenus"
+    )
+    structural=re.compile(r"^(?:chapter|book|part|discourse|homily|sermon|letter|epistle|vision|commandment|similitude|demonstration|canon)\s*0*\d+\b",re.I)
+    tops=[p for p in root.iterdir() if p.is_dir() and p.name not in skip_top]
+    ranked=[]
+    for top in tops:
+        author=canonical_author(top.name)
+        ranked.append((len(b.known.get(author_key(author),[])),top.name.casefold(),top,author))
+    ranked.sort(key=lambda x:(x[0]>0,x[0],x[1]))
+    added=0
+    for known_count,_,top,base_author in ranked:
+        if len(b.items)>=TARGET: break
+        if top.name=="Apostolic Constitutions":
+            rel="Apostolic Constitutions/Constitutions of the Holy Apostles Book 8.html"
+            if (root/rel).is_file():
+                b.add_single("Anonymous compiler (Apostolic Constitutions)","Apostolic Constitutions — Book VIII",rel,
+                    "Book VIII of the Apostolic Constitutions, containing liturgical and ecclesiastical materials. Books I–VII are already catalogued.",500)
+            continue
+
+        def author_for(directory):
+            rel=directory.relative_to(root).as_posix().casefold()
+            if top.name=="Clement of Rome" and "pseudo-clement" in rel:
+                return "Pseudo-Clement (anonymous)"
+            if top.name=="Hegesippus" and "pseudo-hegesippus" in rel:
+                return "Pseudo-Hegesippus (anonymous)"
+            if top.name=="Testaments of the Twelve Patriarchs":
+                return "Anonymous (Testaments of the Twelve Patriarchs)"
+            return canonical_author(top.name)
+
+        author=canonical_author(top.name)
+        cap=14 if known_count==0 else 10
+        author_added=0
+        dirs=[top]+[p for p in top.rglob("*") if p.is_dir()]
+        dirs.sort(key=lambda p:(len(p.relative_to(top).parts),natural_key(str(p))))
+        for directory in dirs:
+            if len(b.items)>=TARGET or author_added>=cap: break
+            if any(p.is_dir() for p in directory.iterdir()): continue
+            rel_dir=directory.relative_to(root).as_posix()
+            if any(term in ("/"+rel_dir.casefold()) for term in blocked): continue
+            files=[p for p in directory.iterdir() if p.is_file() and p.suffix.lower() in (".html",".htm")]
+            files=[p for p in files if not any(term in ("/"+p.relative_to(root).as_posix().casefold()) for term in blocked)]
+            if not files: continue
+            actual=author_for(directory)
+            stems=[p.stem.replace("_"," ").strip() for p in files]
+            if len(files)>=2 and all(structural.match(x) for x in stems):
+                title=directory.name.replace("_"," ").strip()
+                if title.casefold() in {"first book - visions","second book - commandments","third book - similitudes"}:
+                    continue
+                rels=[p.relative_to(root).as_posix() for p in files]
+                if b.add_group(actual,title,rels,
+                    f"A complete multi-part Christian text by {actual}, with its surviving chapters or books kept together in canonical order.",500):
+                    author_added+=1
+                    added+=1
+                continue
+            for p in sorted(files,key=lambda q:natural_key(q.name)):
+                if len(b.items)>=TARGET or author_added>=cap: break
+                stem=p.stem.replace("_"," ").strip()
+                if structural.match(stem): continue
+                low=p.relative_to(root).as_posix().casefold()
+                if any(term in ("/"+low) for term in blocked): continue
+                if re.search(r"\bfrom\b",stem,re.I): continue
+                title=directory.name.replace("_"," ").strip() if stem.casefold() in {"english translation","english","text","translation"} else stem
+                if title.casefold() in {"readme","metadata","contents","index","translator's introduction","preface"}: continue
+                rel=p.relative_to(root).as_posix()
+                desc=f"A standalone Christian historical or theological work by {actual}, transcribed from the repository source edition. Editorial introductions, footnote apparatus and navigation are removed."
+                if b.add_single(actual,title,rel,desc,300):
+                    author_added+=1
+                    added+=1
+    # Texts filed by their work-title rather than a personal author.
+    special=[
+        ("Anonymous Christian author","The Odes of Solomon","Odes of Solomon/Odes of Solomon.html","The complete early Christian hymn collection known as the Odes of Solomon.",500),
+        ("Anonymous Christian author","The Acts of Peter and Paul","Acts of Peter and Paul/Acts of Peter and Paul.html","The ancient Christian apocryphal Acts of Peter and Paul.",500),
+        ("Anonymous Christian author","The Protoevangelium of James","Protoevangelium of James/Protoevangelium of James.html","The early Christian infancy gospel traditionally known as the Protoevangelium of James.",500),
+        ("Anonymous Christian author","The Passion of Saints Perpetua and Felicity","Passion of Saints Perpetua and Felicity/Passion of Saints Perpetua and Felicity.html","The early Christian martyr narrative of Perpetua, Felicity and their companions.",500),
+        ("Anonymous Christian author","The Liturgy of Saint James","Liturgy of Saint James/Liturgy of Saint James.html","The ancient liturgical text associated with the Liturgy of Saint James.",500),
+        ("Anonymous Christian author","The Liturgy of Saint Mark","Liturgy of Saint Mark/Liturgy of Saint Mark.html","The ancient liturgical text associated with the Liturgy of Saint Mark.",500),
+        ("Anonymous Christian author","The Martyrdom of Colluthus","Martyrdom of Colluthus/Martyrdom of Colluthus.html","The Christian martyrdom narrative of Colluthus.",200),
+    ]
+    for author,title,rel,desc,minimum in special:
+        if len(b.items)>=TARGET: break
+        if (root/rel).is_file(): b.add_single(author,title,rel,desc,minimum)
+
+    # The Twelve Patriarchs is transmitted with Christian interpolations; no patriarch is presented as the author.
+    d=root/"Testaments of the Twelve Patriarchs"
+    if d.is_dir():
+        for p in sorted(d.glob("*.html"),key=lambda q:natural_key(q.name)):
+            if len(b.items)>=TARGET: break
+            b.add_single("Anonymous (Testaments of the Twelve Patriarchs)",p.stem.replace("_"," ").strip(),
+                p.relative_to(root).as_posix(),
+                "One testament in the ancient collection of the Twelve Patriarchs. The work contains Jewish material with Christian interpolations; traditional patriarchal names are not treated as proven authorship.",300)
+
+    # Two complete pseudo-Clementine literary collections; attribution is explicitly pseudonymous.
+    pseudo=root/"Clement of Rome"/"Pseudo-Clement"
+    if pseudo.is_dir():
+        for dirname,title in [("Clementine Homilies","Clementine Homilies"),("Clementine Recognitions","Clementine Recognitions"),("Two Epistles on Virginity","Two Epistles on Virginity")]:
+            d=pseudo/dirname
+            if not d.is_dir() or len(b.items)>=TARGET: continue
+            rels=[p.relative_to(root).as_posix() for p in d.glob("*.html")]
+            if len(rels)>=2:
+                b.add_group("Pseudo-Clement (anonymous)",title,rels,
+                    f"The complete pseudonymous Clementine {title.lower()}, preserved as an early Christian literary work.",1500)
+
+    # Pseudo-Hegesippus is not the second-century Hegesippus.
+    d=root/"Hegesippus"/"Pseudo-Hegesippus"/"On the ruin of the city of Jerusalem"
+    if d.is_dir() and len(b.items)<TARGET:
+        rels=[p.relative_to(root).as_posix() for p in d.glob("Book *.html")]
+        if len(rels)>=4:
+            b.add_group("Pseudo-Hegesippus (anonymous)","On the Ruin of the City of Jerusalem",rels,
+                "A late antique Christian Latin retelling of the Jewish War, traditionally but incorrectly associated with Hegesippus.",2000)
+
+    print(f"EXTENDED_SOURCE_POOL_ADDED={added}")
+
 def write_outputs(b,out):
     out.mkdir(parents=True,exist_ok=True)
     if len(b.items)<TARGET:
@@ -1515,6 +1640,7 @@ def main():
     add_gap_fillers(b)
     add_gap_review_candidates(b,a.gap_review_csv)
     build_auto(b)
+    build_extended_source_pool(b)
     print(f"ELIGIBLE_BEFORE_TRIM={len(b.items)}")
     write_outputs(b,a.output_dir)
 
