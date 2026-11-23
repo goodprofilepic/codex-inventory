@@ -995,14 +995,14 @@ def add_gap_review_candidates(b, gap_csv):
     max_rounds = max((len(grouped[a]) for a in author_order), default=0)
     for round_no in range(max_rounds):
         for ak in author_order:
-            if round_no < min(len(grouped[ak]), 18):
+            if round_no < min(len(grouped[ak]), 24):
                 ordered.append(grouped[ak][round_no])
     added = 0
     attempted = 0
     per_author = defaultdict(int)
     # Fetch a bounded candidate window concurrently, then preserve round-robin order
     # for deterministic author balance and titles in the final batch.
-    fetch_window = ordered[:360]
+    fetch_window = ordered[:480]
     fetched = {}
     def fetch_page(item):
         try:
@@ -1019,7 +1019,7 @@ def add_gap_review_candidates(b, gap_csv):
         if len(b.items) >= TARGET:
             break
         ak = author_key(item["author"])
-        if per_author[ak] >= 18:
+        if per_author[ak] >= 24:
             continue
         attempted += 1
         raw, fetch_error = fetched.get(id(item), (None, RuntimeError("missing concurrent fetch result")))
