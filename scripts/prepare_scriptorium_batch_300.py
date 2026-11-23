@@ -1619,7 +1619,7 @@ def write_outputs(b,out):
             "","## Author counts",""]
     for a,n in sorted(counts.items(),key=lambda q:(-q[1],q[0].casefold())): readme.append(f"- {a}: {n}")
     readme += ["","## Heresiological coverage","",
-        "- Pelagius: complete Pauline expositions included; Latin follows Souter (1926), with the site's CC0 English rendering alongside.",
+        "- Pelagius: the thirteen Pauline expositions were included in the preceding 200-work batch and are intentionally not duplicated here.",
         "- Arius: no independent complete book was found in the source collection; extant material is fragmentary or quoted by opponents, so no falsely complete Arius work was manufactured.",
         "- Nestorius: no additional work was added because the latest inventory already includes the Bazaar in five records and the letters to Celestine.",
         "- Theodoret's five-book Church History and three Eranistes dialogues were excluded as already catalogued.",
