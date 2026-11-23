@@ -481,6 +481,17 @@ def main():
             else:
                 seen_paths[key]=(row.get("author",""),title)
         seen[ak].append(title)
+    non_christian=[]
+    out_of_scope=(
+        "alexanderoflycopolis","ammoniusofalexandria","josephus",
+        "philoofalexandria","papias the lexicographer".replace(" ",""),
+        "oresiesisheru","codexveronensis","bookofenoch","bookofjubilees",
+        "sibyllineoracles","testamentsofthetwelvepatriarchs"
+    )
+    for row in batch:
+        ident=norm(" ".join([row.get("author",""),row.get("title",""),row.get("source_url",""),row.get("source_files","")]))
+        if any(term in ident for term in out_of_scope):
+            non_christian.append((row.get("author",""),row.get("title","")))
     required=["title","author","source_edition","source_url","words","characters","rights_status","description","rights_notes"]
     missing_metadata=[]
     for i,row in enumerate(batch,1):
@@ -495,6 +506,7 @@ def main():
         f"- Previous 200-draft manifest entries checked: {len(prior)}",
         f"- Inventory/prior-batch title OR source-path matches: {len(inventory_hits)}",
         f"- Within-batch title OR source-path duplicates: {len(batch_hits)}",
+        f"- Out-of-scope/non-Christian items: {len(non_christian)}",
         f"- Missing required metadata fields: {len(missing_metadata)}",
         "",
     ]
@@ -506,6 +518,10 @@ def main():
         report += ["","## Within-batch duplicates",""]
         for author,title,old in batch_hits:
             report.append(f"- **{author} — {title}** overlaps **{old}**")
+    if non_christian:
+        report += ["","## Out-of-scope items",""]
+        for author,title in non_christian:
+            report.append(f"- **{author} — {title}**")
     if missing_metadata:
         report += ["","## Missing metadata",""]
         for i,title,fields in missing_metadata:
@@ -518,12 +534,13 @@ def main():
     print(f"AUDIT_BATCH_ROWS={len(batch)}")
     print(f"AUDIT_INVENTORY_DUPLICATES={len(inventory_hits)}")
     print(f"AUDIT_WITHIN_BATCH_DUPLICATES={len(batch_hits)}")
+    print(f"AUDIT_NON_CHRISTIAN_ITEMS={len(non_christian)}")
     print(f"AUDIT_MISSING_METADATA={len(missing_metadata)}")
     for author,title,hits in inventory_hits:
         print(f"INVENTORY_DUPLICATE={author} | {title} | MATCHES={'; '.join(hits)}")
     for author,title,old in batch_hits:
         print(f"BATCH_DUPLICATE={author} | {title} | MATCHES={old}")
-    if len(batch)!=300 or len(prior)!=200 or inventory_hits or batch_hits or missing_metadata:
+    if len(batch)!=300 or len(prior)!=200 or inventory_hits or batch_hits or non_christian or missing_metadata:
         raise SystemExit("Independent audit failed; inspect the report before import.")
 
 if __name__=="__main__":
