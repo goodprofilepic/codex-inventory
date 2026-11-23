@@ -448,8 +448,10 @@ def work_overlap(candidate, existing, author=None):
         if re.fullmatch(r"homilyonpsalm(1|53|130)", c) and compact("Homilies on Psalms 1, 53, and 130") in e:
             return True
     if ak == author_key("Ignatius of Antioch"):
-        simplify = lambda v: re.sub(r"^(?:epistle\s+to\s+|ignatius\s+to\s+|to\s+)", "", v.casefold().strip())
-        simplify = lambda v: re.sub(r"\s*(?:\(|—|-)?\s*(?:longer recension|syriac version)\)?$", "", simplify(v)).strip()
+        def simplify(v):
+            x=re.sub(r"^(?:epistle\s+to\s+|ignatius\s+to\s+|to\s+)", "", v.casefold().strip())
+            x=re.sub(r"\s*(?:\(|—|-)?\s*(?:longer recension|syriac version)\)?$", "", x).strip()
+            return x
         if simplify(candidate) == simplify(existing):
             return True
     if ak == author_key("Aphrahat the Persian Sage"):
