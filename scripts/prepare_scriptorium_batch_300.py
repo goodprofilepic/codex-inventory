@@ -1488,7 +1488,11 @@ def build_extended_source_pool(b):
         "Protoevangelium of James","Passion of Saints Perpetua and Felicity",
         "Liturgy of Saint James","Liturgy of Saint Mark","Martyrdom of Colluthus",
         "Ibn al-Tayyib","On the Solstices and the Equinoxes",
-        "Religious Discussion at the Court of the Sassanids"
+        "Religious Discussion at the Court of the Sassanids",
+        # Non-Christian/Jewish source material is not used to pad a Christian library batch.
+        "Josephus","Philo of Alexandria","Book of Enoch","Book of Jubilees",
+        "Book of Biblical Antiquities","Sibylline Oracles","Testaments of the Twelve Patriarchs",
+        "Oresiesis-Heru-sa Ast","Papias the Lexicographer","Codex Veronensis"
     }
     blocked=(
         "/fragments","/doubtful","/spurious","preface","introduction","translator",
@@ -1522,7 +1526,7 @@ def build_extended_source_pool(b):
             return canonical_author(top.name)
 
         author=canonical_author(top.name)
-        cap=18 if known_count==0 else 12
+        cap=30 if known_count==0 else 20
         author_added=0
         dirs=[top]+[p for p in top.rglob("*") if p.is_dir()]
         dirs.sort(key=lambda p:(len(p.relative_to(top).parts),natural_key(str(p))))
@@ -1578,15 +1582,6 @@ def build_extended_source_pool(b):
     for author,title,rel,desc,minimum in special:
         if len(b.items)>=TARGET: break
         if (root/rel).is_file(): b.add_single(author,title,rel,desc,minimum)
-
-    # The Twelve Patriarchs is transmitted with Christian interpolations; no patriarch is presented as the author.
-    d=root/"Testaments of the Twelve Patriarchs"
-    if d.is_dir():
-        for p in sorted(d.glob("*.html"),key=lambda q:natural_key(q.name)):
-            if len(b.items)>=TARGET: break
-            b.add_single("Anonymous (Testaments of the Twelve Patriarchs)",p.stem.replace("_"," ").strip(),
-                p.relative_to(root).as_posix(),
-                "One testament in the ancient collection of the Twelve Patriarchs. The work contains Jewish material with Christian interpolations; traditional patriarchal names are not treated as proven authorship.",300)
 
     # Two complete pseudo-Clementine literary collections; attribution is explicitly pseudonymous.
     pseudo=root/"Clement of Rome"/"Pseudo-Clement"
