@@ -292,6 +292,14 @@ def title_match(candidate: str, existing: str, author: str | None = None) -> boo
         return True
     if en in {"homilies","sermons"} and re.search(r"\b(homily|sermon)\b",cn):
         return True
+    # A correspondence volume may already be represented by separately catalogued named letters.
+    if "olympias" in cn and re.search(r"\b(letters|correspondence)\b",cn) and "olympias" in en and re.search(r"\bto olympias\b",en):
+        return True
+    # An existing grouped set of psalm homilies covers each component homily by the same author.
+    if author and author_key(author)==author_key("Hilary of Poitiers") and "homilies on psalms" in en and "homily on psalm" in cn:
+        old_nums=set(re.findall(r"\d+",existing)); new_nums=set(re.findall(r"\d+",candidate))
+        if new_nums and new_nums.issubset(old_nums):
+            return True
     # Treat numbered items within an explicitly overlapping range as present.
     if cd and ed and cd[0]==ed[0] and cd[1] is not None and ed[1] is not None:
         if cd[1] >= ed[1] and cd[1] <= ed[2] and cb==eb: return True

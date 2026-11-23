@@ -561,6 +561,14 @@ class Builder:
             return True
         if author == "John Chrysostom" and "correspondence" in title.casefold() and any("innocent" in x.casefold() and "correspondence" in x.casefold() for x in existing):
             return True
+        # Individual letters to Olympias are already catalogued; don't add a retitled collection of them.
+        if author == "John Chrysostom" and "olympias" in title.casefold() and any("olympias" in x.casefold() for x in existing):
+            return True
+        # A grouped set of Hilary's psalm homilies already covers its constituent sermon titles.
+        if author == "Hilary of Poitiers" and re.search(r"homily\s+on\s+psalm\s+(1|53|130)\b", title, re.I):
+            number = re.search(r"homily\s+on\s+psalm\s+(1|53|130)\b", title, re.I).group(1)
+            if any("homilies on psalms" in x.casefold() and re.search(r"\b" + number + r"\b", x) for x in existing):
+                return True
         return False
 
     def add(self, author, title, body, rels, meta=None, min_words=120):
