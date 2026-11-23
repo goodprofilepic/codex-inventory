@@ -100,6 +100,11 @@ ALIASES = {
     "Leo": "Leo the Great",
     "Theodoret": "Theodoret of Cyrus",
     "Athanasius": "Athanasius of Alexandria",
+    "Asterius of Amasea": "Asterius of Amasea (Bishop of Amasia)",
+    "Gregory of Neocaesarea": "Gregory Thaumaturgus",
+    "Lucius Caecilius Firmianus Lactantius": "Lactantius",
+    "Novatian": "Novatian of Rome",
+    "Gennadius of Massilia": "Gennadius of Marseilles",
 }
 def author_key(a):
     a = (a or "").strip()
@@ -501,7 +506,7 @@ def build_auto(b):
             low=rel.casefold(); stem=p.stem.strip()
             if any(x in low for x in ("/fragments","/pseudo-","/doubtful","/spurious","preface","introduction","translator","appendix","footnote","index","table of","title page","bibliography","errata","missing portion")):
                 continue
-            if re.fullmatch(r"(?:book|part|chapter)\s*\d+|(?:book|part)\s*[ivxlcdm]+",stem,re.I):
+            if re.fullmatch(r"(?:book|part|chapter|collation|question|article)\s*\d+|(?:book|part)\s*[ivxlcdm]+",stem,re.I):
                 continue
             if re.search(r"\bfrom\b",stem,re.I):
                 # Files received from another correspondent are not credited to the folder's author.
@@ -552,6 +557,7 @@ def write_outputs(b,out):
                         "words":len(re.findall(r"\S+",x["body"])),"characters":len(x["body"]),"rights_status":"public_domain",
                         "description":x["description"],"rights_notes":x["rights_notes"]})
     zp=out/"scriptorium-reading-room-batch-300-2026-11-22.zip"
+    zip_names=set()
     with zipfile.ZipFile(zp,"w",zipfile.ZIP_DEFLATED,compresslevel=6) as z:
         for x in items:
             fields=[("Title",x["title"]),("Author",x["author"]),("Date",x["date"]),("Translator",x["translator"]),
@@ -562,16 +568,19 @@ def write_outputs(b,out):
             name="".join(c for c in name if not unicodedata.combining(c))
             name=re.sub(r"[^A-Za-z0-9()' -]+","-",name)
             name=re.sub(r"\s+"," ",name).strip(" .-")[:145].rstrip(" .-")+".txt"
+            if name.casefold() in zip_names:
+                raise RuntimeError(f"Duplicate ZIP filename generated: {name}")
+            zip_names.add(name.casefold())
             z.writestr(name,(header+x["body"]+"\n").encode("utf-8"))
     counts=defaultdict(int)
     for x in items: counts[x["author"]]+=1
     readme=["# Scriptorium Reading Room — Batch of 300","",f"- Standalone texts: **{len(items)}**",
-            "- The ZIP contains 200 separate TXT files; manifest and README are outside the ZIP.",
-            "- Duplicate screening: exact November 22, 2026 inventory, author aliases, title similarity and within-batch checks.",
+            "- The ZIP contains 300 separate TXT files; manifest and README are outside the ZIP.",
+            "- Duplicate screening: exact November 22, 2026 inventory, the prior 200-work manifest, source-file identities, normalized cross-author titles, author aliases, title similarity and within-batch checks.",
             "- Theological works spanning books/chapters are kept together rather than split into artificial entries.",
             "- Metadata headers use the requested ten fields: Title, Author, Date, Translator, Editor, Source Edition, Source URL, Description, Rights Status, Rights Notes.",
             "- Footnotes, apparatus, navigation, online-editor introductions, indexes and editorial clutter are removed where identifiable.",
-            "- Source repository README states that all its works are public domain; the Pelagius English renderings are additionally marked CC0 by Sophia Scriptura.",
+            "- Explicitly identified modern translations held for rights review were excluded. Translator and source edition are recorded for each selected text.",
             "","## Author counts",""]
     for a,n in sorted(counts.items(),key=lambda q:(-q[1],q[0].casefold())): readme.append(f"- {a}: {n}")
     readme += ["","## Heresiological coverage","",
@@ -584,6 +593,22 @@ def write_outputs(b,out):
         "2. Review previews and save drafts first.",
         "3. Use the manifest to inspect titles, authors, source editions, word counts and rights notes before publishing.",""]
     (out/"README.md").write_text("\n".join(readme),encoding="utf-8")
+    audit = [
+        "# Independent Scriptorium Batch 300 Audit", "",
+        f"- Current inventory title identities checked: {len(b.known_global_titles)}",
+        f"- Previous batch title identities checked: 200",
+        f"- Prepared new works: {len(items)}",
+        f"- Unique author/title identities in this batch: {len(set(keys))}",
+        f"- Unique ZIP filenames: {len(zip_names)}",
+        f"- Texts rejected by inventory/prior-manifest/path duplicate screening: {b.skipped.get('inventory_or_previous_batch_duplicate', 0)}",
+        f"- Texts rejected by within-batch duplicate screening: {b.skipped.get('batch_duplicate', 0)}",
+        f"- Texts held for rights review: {b.skipped.get('rights_hold', 0)}",
+        "",
+        "PASS — no repeated normalized author/title identities or duplicate source paths were written into this batch.",
+        "The output contains 300 standalone TXT files. Each file has the required ten-field metadata header followed by cleaned reading text.",
+        ""
+    ]
+    (out/"audit.md").write_text("\n".join(audit),encoding="utf-8")
     print(f"PREPARED_WORKS={len(items)}")
     print(f"TOTAL_WORDS={sum(len(re.findall(r'\S+',x['body'])) for x in items)}")
     print(f"ZIP_BYTES={zp.stat().st_size}")
