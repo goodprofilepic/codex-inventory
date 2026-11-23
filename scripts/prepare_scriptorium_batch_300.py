@@ -1453,7 +1453,9 @@ def build_extended_source_pool(b):
         "Eugippius","John of Ephesus","Rabbula","Shenoute the Archimandrite",
         "Pachomius the Great","Odes of Solomon","Acts of Peter and Paul",
         "Protoevangelium of James","Passion of Saints Perpetua and Felicity",
-        "Liturgy of Saint James","Liturgy of Saint Mark","Martyrdom of Colluthus"
+        "Liturgy of Saint James","Liturgy of Saint Mark","Martyrdom of Colluthus",
+        "Ibn al-Tayyib","On the Solstices and the Equinoxes",
+        "Religious Discussion at the Court of the Sassanids"
     }
     blocked=(
         "/fragments","/doubtful","/spurious","preface","introduction","translator",
@@ -1602,7 +1604,7 @@ def write_outputs(b,out):
     for x in items: counts[x["author"]]+=1
     readme=["# Scriptorium Reading Room — Batch of 300","",f"- Standalone texts: **{len(items)}**",
             "- The ZIP contains 300 separate TXT files; manifest and README are outside the ZIP.",
-            "- Duplicate screening: exact November 22, 2026 inventory, author aliases, previous 200-draft manifest, title similarity and within-batch checks.",
+            "- Duplicate screening: exact November 22, 2026 inventory, previous 200-work manifest, author aliases, source-file identities, cross-author exact titles, numbered-series and compound-work overlaps, and within-batch checks.",
             "- Theological works spanning books/chapters are kept together rather than split into artificial entries.",
             "- Metadata headers use the requested ten fields: Title, Author, Date, Translator, Editor, Source Edition, Source URL, Description, Rights Status, Rights Notes.",
             "- Footnotes, apparatus, navigation, online-editor introductions, indexes and editorial clutter are removed where identifiable.",
