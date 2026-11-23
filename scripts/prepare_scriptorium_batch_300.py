@@ -1589,6 +1589,7 @@ def write_outputs(b,out):
                         "words":len(re.findall(r"\S+",x["body"])),"characters":len(x["body"]),"rights_status":"public_domain",
                         "description":x["description"],"rights_notes":x["rights_notes"]})
     zp=out/"scriptorium-reading-room-batch-300-2026-11-22.zip"
+    zip_names=set()
     with zipfile.ZipFile(zp,"w",zipfile.ZIP_DEFLATED,compresslevel=6) as z:
         for x in items:
             fields=[("Title",x["title"]),("Author",x["author"]),("Date",x["date"]),("Translator",x["translator"]),
@@ -1599,6 +1600,9 @@ def write_outputs(b,out):
             name="".join(c for c in name if not unicodedata.combining(c))
             name=re.sub(r"[^A-Za-z0-9()' -]+","-",name)
             name=re.sub(r"\s+"," ",name).strip(" .-")[:145].rstrip(" .-")+".txt"
+            if name.casefold() in zip_names:
+                raise RuntimeError(f"Duplicate ZIP filename generated: {name}")
+            zip_names.add(name.casefold())
             z.writestr(name,(header+x["body"]+"\n").encode("utf-8"))
     counts=defaultdict(int)
     for x in items: counts[x["author"]]+=1
