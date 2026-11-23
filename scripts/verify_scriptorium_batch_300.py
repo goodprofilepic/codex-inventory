@@ -113,6 +113,7 @@ def numbered_series_signature(value: str):
     patterns = [
         (r"\bconference\s*([0-9]+|[ivxlcdm]+)\b", "conference"),
         (r"^\s*([0-9]+)\.\s*(?:the\s+)?(?:first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|\w+)\s+conference\b", "conference"),
+        (r"^\s*([0-9]+)\.\s*(?:the\s+)?conference\b", "conference"),
         (r"\b(treatise|epistle|letter|sermon|homily|demonstration|oration|dialogue)\s*([0-9]+|[ivxlcdm]+)\b", None),
     ]
     roman={"i":1,"v":5,"x":10,"l":50,"c":100,"d":500,"m":1000}
