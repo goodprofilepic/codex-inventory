@@ -176,9 +176,11 @@ def text_rights_hold(author, title, rels):
         return True
     if "rabanus maurus" in identity and ("maccabees" in identity or "wisdom of solomon" in identity):
         return True
-    if "basil" in identity and re.search(r"homily\s+on\s+psalm", identity):
+    if "basil" in identity and "psalm" in identity and ("homily" in identity or "homilies" in identity):
         return True
     if "augustine" in identity and "enchiridion" in identity:
+        return True
+    if re.search(r"\b(fragments?|fragmentary|partial transcription|book \d+ \(start\))\b", identity):
         return True
     if any(x in identity for x in ("gleason l. archer", "albert c. outler", "sister agnes clare way")):
         return True
