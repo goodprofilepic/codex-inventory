@@ -155,6 +155,7 @@ def special_overlap(candidate: str, existing: str, author: str | None = None) ->
     if ak == author_key("Ignatius of Antioch"):
         def simple(x):
             x=re.sub(r"^(?:epistle\s+to\s+|ignatius\s+to\s+|to\s+)", "", x.strip())
+            x=re.sub(r"^st\.?\s+", "", x)
             x=re.sub(r"\s*(?:\(|—|-)?\s*(?:longer recension|syriac version)\)?$", "", x).strip()
             return norm(x)
         if simple(c)==simple(e): return True
