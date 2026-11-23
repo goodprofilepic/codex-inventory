@@ -238,6 +238,43 @@ def author_key(a):
     return norm(canonical_author(a))
 
 TITLE_EQUIVALENTS = {
+
+    norm("Commonitorium"): norm("A Commonitory"),
+    norm("A Commonitory"): norm("Commonitorium"),
+    norm("Against Publishing the Errors"): norm("Against Publishing the Errors of the Brethren"),
+    norm("Against Publishing the Errors of the Brethren"): norm("Against Publishing the Errors"),
+    norm("Fifth Theological Oration (Oration 31)"): norm("Oration 31 — The Fifth Theological Oration"),
+    norm("Oration 31 — The Fifth Theological Oration"): norm("Fifth Theological Oration (Oration 31)"),
+    norm("Homily on the Paralytic"): norm("On the Paralytic Let Down Through the Roof"),
+    norm("On the Paralytic Let Down Through the Roof"): norm("Homily on the Paralytic"),
+    norm("Counter-Statements to Cyril's 12 Anathemas"): norm("Counter-Statements of Theodoret"),
+    norm("Counter-Statements of Theodoret"): norm("Counter-Statements to Cyril's 12 Anathemas"),
+    norm("Sermon 33 on the New Testament"): norm("Sermon 0XXXIIL"),
+    norm("Sermon 0XXXIIL"): norm("Sermon 33 on the New Testament"),
+    norm("The Oration of the Emperor Constantine"): norm("Oration of Constantine"),
+    norm("Oration of Constantine"): norm("The Oration of the Emperor Constantine"),
+    norm("Councils of Ariminum and Seleucia"): norm("De Synodis"),
+    norm("De Synodis"): norm("Councils of Ariminum and Seleucia"),
+    norm("The Pearl-Seven Hymns on the Faith"): norm("The Pearl"),
+    norm("The Pearl"): norm("The Pearl-Seven Hymns on the Faith"),
+    norm("1. First Conference of Abbot Moses"): norm("Conference 1"),
+    norm("Conference 1"): norm("1. First Conference of Abbot Moses"),
+    norm("2. Second Conference of Abbot Moses"): norm("Conference 2"),
+    norm("Conference 2"): norm("2. Second Conference of Abbot Moses"),
+    norm("3. Conference of Abbot Paphnutius"): norm("Conference 3"),
+    norm("Conference 3"): norm("3. Conference of Abbot Paphnutius"),
+    norm("4. Conference of Abbot Daniel"): norm("Conference 4"),
+    norm("Conference 4"): norm("4. Conference of Abbot Daniel"),
+    norm("5. Conference of Abbot Serapion"): norm("Conference 5"),
+    norm("Conference 5"): norm("5. Conference of Abbot Serapion"),
+    norm("6. Conference of Abbot Theodore"): norm("Conference 6"),
+    norm("Conference 6"): norm("6. Conference of Abbot Theodore"),
+    norm("7. First Conference of Abbot Serenus"): norm("Conference 7"),
+    norm("Conference 7"): norm("7. First Conference of Abbot Serenus"),
+    norm("8. The Second Conference of Abbot Serenus"): norm("Conference 8"),
+    norm("Conference 8"): norm("8. The Second Conference of Abbot Serenus"),
+    norm("9. The First Conference of Abbot Isaac"): norm("Conference 9"),
+    norm("Conference 9"): norm("9. The First Conference of Abbot Isaac"),
     norm("Commonitorium"): norm("A Commonitory"),
     norm("A Commonitory"): norm("Commonitorium"),
     norm("Against Publishing the Errors"): norm("Against Publishing the Errors of the Brethren"),
@@ -384,7 +421,25 @@ def title_base_keys(value):
     key = norm(raw)
     return TITLE_EQUIVALENTS.get(key, key)
 
+
+def work_overlap(candidate, existing, author=None):
+    """Catch collection/component and alternate-edition work overlaps."""
+    ak = author_key(author or "")
+    c = norm(candidate)
+    e = norm(existing)
+    if ak == author_key("John Chrysostom"):
+        if c == norm("Letters to Olympias") and ("to olympias" in e or "to my lady" in e):
+            return True
+        if c == norm("To Theodore After His Fall") and e in {norm("Letter 1"), norm("Letter 2")}:
+            return True
+    if ak == author_key("Hilary of Poitiers"):
+        if re.fullmatch(r"homily on psalm (1|53|130)", c) and "homilies on psalms 1 53 and 130" in e:
+            return True
+    return False
+
 def titles_match(candidate, existing, author=None):
+    if work_overlap(candidate, existing, author):
+        return True
     ckeys = title_variants(candidate, author)
     ekeys = title_variants(existing, author)
     if ckeys & ekeys:
@@ -1170,6 +1225,7 @@ def build_auto(b):
             if re.search(r"\bfrom\b",stem,re.I):
                 # Files received from another correspondent are not credited to the folder's author.
                 continue
+            if folder=="Ephrem the Syrian" and re.search(r"^Hymn\s*14\s*plus$",stem,re.I): continue
             if not re.search(r"(?:homily|sermon|letter|epistle|treatise|oration|discourse|dialogue|life of|against |on |commentary|exposition|apology|rule|creed|history|council)",stem,re.I):
                 if len(stem.split())<3: continue
             candidates.append(rel)
