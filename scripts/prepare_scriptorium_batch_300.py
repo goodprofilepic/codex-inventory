@@ -22,6 +22,55 @@ def clean(s):
     s = re.sub(r" *\n *", "\n", s)
     return re.sub(r"\n{3,}", "\n\n", s).strip()
 
+def strip_editorial_apparatus(text):
+    text = clean(text)
+    # Remove footnote/endnote sections and source-site apparatus flattened from HTML.
+    cut_patterns = [
+        r"(?im)^\s*(?:#{1,6}\s*)?(?:footnotes?|endnotes?|notes to (?:the )?text)\s*$",
+        r"(?im)^\s*\[(?:selected\s+)?footnotes?[^\]]*\]\s*$",
+        r"(?im)^\s*\[(?:most of the )?footnotes?[^\]]*(?:moved|renumbered|end|selected)[^\]]*\]\s*$",
+        r"(?im)^\s*(?:#{1,6}\s*)?(?:about this page|contact information|sticky footer)\s*$",
+        r"(?im)^\s*early church fathers\s*[-–—]\s*additional texts\s*$",
+        r"(?im)^\s*this text was transcribed by\b",
+        r"(?im)^\s*the text was transcribed by\b",
+        r"(?im)^\s*contact us\s*\|\s*advertise with new advent\b",
+    ]
+    cut = len(text)
+    for pattern in cut_patterns:
+        m = re.search(pattern, text)
+        if m:
+            cut = min(cut, m.start())
+    text = text[:cut].rstrip()
+
+    # Consecutive numbered notes sometimes appear without a "Footnotes" heading.
+    m = re.search(r"(?m)^\s*\[1\]\s+", text)
+    if m:
+        tail = text[m.start():]
+        numbered = re.findall(r"(?m)^\s*\[\d+\]\s+", tail)
+        if len(numbered) >= 5:
+            text = text[:m.start()].rstrip()
+
+    # Remove call numbers and printed page/column markers.
+    text = re.sub(r"(?<![A-Za-z0-9])\[\d+\](?![A-Za-z0-9])", "", text)
+    text = re.sub(r"\[(?:col\.?\s*\d+|P\.\s*\d+|l\.\s*\d+)\]", "", text, flags=re.I)
+    text = re.sub(r"\|\s*\d{1,4}\s*\|", "", text)
+
+    # Remove detached source/transcription/translator notices, not authorial prefaces.
+    paragraphs = []
+    for paragraph in re.split(r"\n\s*\n", text):
+        p = paragraph.strip()
+        if not p:
+            continue
+        if re.match(r"^(?:commissioned by\b|\[?translated by\b|\[?transcribed by\b|\[?migne\s+pg\b|\[?p\.?\s*\d+\s*\]?\s+indicates\b|this text was transcribed by\b|the text was transcribed by\b)", p, re.I):
+            continue
+        if re.search(r"the footnotes are [^.;]+[.;].*(?:page numbers are omitted|obvious misprints|transcribed from)", p, re.I):
+            continue
+        if re.match(r"^(?:public domain\s*[-–—]|copyright\s*©|sticky footer)", p, re.I):
+            continue
+        paragraphs.append(p)
+    return clean("\n\n".join(paragraphs))
+
+
 def norm(s):
     s = unicodedata.normalize("NFKD", s or "")
     s = "".join(c for c in s if not unicodedata.combining(c))
@@ -48,7 +97,7 @@ def html_to_text(raw):
             node.decompose()
         elif node.name in ("script", "style", "nav", "header", "footer", "img", "svg", "button", "input"):
             node.decompose()
-        elif node.name == "sup" and node.find("a", href=re.compile(r"^#(?:fn|r)\d*", re.I)):
+        elif node.name == "sup":
             node.decompose()
     for node in list(root.find_all("a")):
         href = node.get("href") or ""
@@ -443,7 +492,7 @@ class Builder:
 
     def add(self, author, title, body, rels, meta=None, min_words=120):
         author = canonical_author(author)
-        body = clean(body)
+        body = strip_editorial_apparatus(clean(body))
         # Keep this Reading Room batch focused on complete writings rather than
         # separately catalogued fragments or sermon excerpts.
         if re.search(r"\bfragments?\b", title, re.I) or "[FRAGMENT]" in body.upper():
