@@ -155,6 +155,10 @@ def variants(s: str, author: str | None = None) -> set[str]:
             final.add(n)
     keys={norm(x) for x in final if norm(x)}
     equiv={
+        norm("Commonitorium"):norm("A Commonitory"),
+        norm("A Commonitory"):norm("Commonitorium"),
+        norm("Against Publishing the Errors"):norm("Against Publishing the Errors of the Brethren"),
+        norm("Against Publishing the Errors of the Brethren"):norm("Against Publishing the Errors"),
         norm("Of Two Souls"):norm("Concerning Two Souls, Against the Manichaeans"),
         norm("Care of the Dead"):norm("On Care to Be Had for the Dead"),
         norm("A Treatise on the Care of the Dead"):norm("On Care to Be Had for the Dead"),
