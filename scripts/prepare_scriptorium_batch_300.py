@@ -476,11 +476,11 @@ def add_grouped_thomas_and_bonaventure(b):
 def build_auto(b):
     # Quotas keep the batch broad: existing authors' missing writings plus complete works from smaller authors.
     priority=[
-        ("Leo the Great",18),("John Chrysostom",16),("Origen of Alexandria",22),
-        ("Augustine of Hippo",14),("Jerome",16),("Athanasius of Alexandria",10),
-        ("Basil of Caesarea",8),("Cyril of Alexandria",8),("Tertullian of Carthage",18),
-        ("Cyprian of Carthage",24),("Hilary of Poitiers",7),("Eusebius of Caesarea",8),
-        ("Ambrose of Milan",10),("Sulpicius Severus",7),("Clement of Alexandria",5),
+        ("Leo the Great",30),("John Chrysostom",30),("Origen of Alexandria",40),
+        ("Augustine of Hippo",25),("Jerome",25),("Athanasius of Alexandria",18),
+        ("Basil of Caesarea",15),("Cyril of Alexandria",12),("Tertullian of Carthage",25),
+        ("Cyprian of Carthage",35),("Hilary of Poitiers",10),("Eusebius of Caesarea",10),
+        ("Ambrose of Milan",15),("Sulpicius Severus",10),("Clement of Alexandria",8),
         ("Lactantius",10),("Irenaeus of Lyons",6),("Asterius of Amasea",5),
         ("Gregory of Neocaesarea",4),("Novatian of Rome",2),("Aphrahat the Persian Sage",4),
         ("Evagrius Scholasticus",4),("Philoxenus of Mabbug",6),("Dionysius of Alexandria",6),
