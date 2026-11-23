@@ -626,15 +626,21 @@ def source_is_known_compound(author, candidate, existing):
         return True
     return False
 
+def global_title_key(value):
+    key = norm(value or "")
+    return re.sub(r"^(?:the|a|an)", "", key)
+
 class Builder:
     def __init__(self, root, inventory_path, prior_batch_manifest=None):
         self.root = root; self.items = []; self.known = defaultdict(list); self.seen = set()
         self.known_paths = set(); self.seen_paths = set()
+        self.known_global_titles = set(); self.seen_global_titles = set()
         self.skipped = defaultdict(int)
         with inventory_path.open(encoding="utf-8-sig", newline="") as f:
             for r in csv.DictReader(f, delimiter=";"):
                 ak = author_key(r.get("attributed_author", "")); t = r.get("title", "")
                 if ak and t: self.known[ak].append(t)
+                if t: self.known_global_titles.add(global_title_key(t))
                 sk=source_path_key(r.get("source_url",""))
                 if sk: self.known_paths.add(sk)
         self.prior_batch_rows = 0
@@ -644,6 +650,7 @@ class Builder:
                     ak = author_key(r.get("author", "")); t = r.get("title", "")
                     if ak and t:
                         self.known[ak].append(t)
+                        self.known_global_titles.add(global_title_key(t))
                         self.prior_batch_rows += 1
                     for value in [r.get("source_url",""), *(r.get("source_files","") or "").split(";")]:
                         sk=source_path_key(value)
@@ -657,6 +664,10 @@ class Builder:
             sk=source_path_key(rel)
             if sk and (sk in self.known_paths or sk in self.seen_paths):
                 return True
+        # Long exact title matches are also checked across catalogue author labels.
+        global_key=global_title_key(title)
+        if len(global_key)>=16 and (global_key in self.known_global_titles or global_key in self.seen_global_titles):
+            return True
         for old in self.known.get(ak, []):
             if titles_match(title, old, author) or source_is_known_compound(author,title,old):
                 return True
@@ -740,6 +751,7 @@ class Builder:
         for rel in rels:
             sk=source_path_key(rel)
             if sk: self.seen_paths.add(sk)
+        self.seen_global_titles.add(global_title_key(title))
         self.items.append({
             "author": author, "title": title, "body": body, "rels": rels,
             "date": m.get("date",""), "translator": translator, "editor": editor,
