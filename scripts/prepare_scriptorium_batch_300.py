@@ -1451,7 +1451,9 @@ def build_extended_source_pool(b):
         "Thomas Aquinas","Bonaventure","Theophylact of Ohrid","Shepherd of Hermas",
         "Didache","Epistle of Barnabas","Epistle to Diognetus","Optatus of Milevis",
         "Eugippius","John of Ephesus","Rabbula","Shenoute the Archimandrite",
-        "Pachomius the Great"
+        "Pachomius the Great","Odes of Solomon","Acts of Peter and Paul",
+        "Protoevangelium of James","Passion of Saints Perpetua and Felicity",
+        "Liturgy of Saint James","Liturgy of Saint Mark","Martyrdom of Colluthus"
     }
     blocked=(
         "/fragments","/doubtful","/spurious","preface","introduction","translator",
@@ -1526,12 +1528,12 @@ def build_extended_source_pool(b):
                     added+=1
     # Texts filed by their work-title rather than a personal author.
     special=[
-        ("Anonymous Christian author","The Odes of Solomon","Odes of Solomon/Odes of Solomon.html","The complete early Christian hymn collection known as the Odes of Solomon.",500),
+        ("Anonymous Christian author","The Odes of Solomon","Odes of Solomon/Translation-Charlesworth.html","The complete early Christian hymn collection known as the Odes of Solomon.",500),
         ("Anonymous Christian author","The Acts of Peter and Paul","Acts of Peter and Paul/Acts of Peter and Paul.html","The ancient Christian apocryphal Acts of Peter and Paul.",500),
-        ("Anonymous Christian author","The Protoevangelium of James","Protoevangelium of James/Protoevangelium of James.html","The early Christian infancy gospel traditionally known as the Protoevangelium of James.",500),
-        ("Anonymous Christian author","The Passion of Saints Perpetua and Felicity","Passion of Saints Perpetua and Felicity/Passion of Saints Perpetua and Felicity.html","The early Christian martyr narrative of Perpetua, Felicity and their companions.",500),
-        ("Anonymous Christian author","The Liturgy of Saint James","Liturgy of Saint James/Liturgy of Saint James.html","The ancient liturgical text associated with the Liturgy of Saint James.",500),
-        ("Anonymous Christian author","The Liturgy of Saint Mark","Liturgy of Saint Mark/Liturgy of Saint Mark.html","The ancient liturgical text associated with the Liturgy of Saint Mark.",500),
+        ("Anonymous Christian author","The Protoevangelium of James","Protoevangelium of James/The Protevangelium of James.html","The early Christian infancy gospel traditionally known as the Protoevangelium of James.",500),
+        ("Anonymous Christian author","The Passion of Saints Perpetua and Felicity","Passion of Saints Perpetua and Felicity/The Passion of the Holy Martyrs Perpetua and Felicitas.html","The early Christian martyr narrative of Perpetua, Felicity and their companions.",500),
+        ("Anonymous Christian author","The Liturgy of Saint James","Liturgy of Saint James/The Divine Liturgy of James.html","The ancient liturgical text associated with the Liturgy of Saint James.",500),
+        ("Anonymous Christian author","The Liturgy of Saint Mark","Liturgy of Saint Mark/The Divine Liturgy of the Holy Apostle and Evangelist Mark.html","The ancient liturgical text associated with the Liturgy of Saint Mark.",500),
         ("Anonymous Christian author","The Martyrdom of Colluthus","Martyrdom of Colluthus/Martyrdom of Colluthus.html","The Christian martyrdom narrative of Colluthus.",200),
     ]
     for author,title,rel,desc,minimum in special:
