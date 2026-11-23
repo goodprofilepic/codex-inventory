@@ -233,11 +233,11 @@ def base_key(s: str) -> str:
     x=re.sub(r"\s*\([^)]*\)", "", x)
     x=re.sub(r"\s*\[[^]]*\]", "", x)
     x=re.sub(
-        r"(?:[,;:]?\s+)(?:book|books|part|volume|vol\.?|tome)\s*(?:no\.?\s*)?(?:[0-9]+|[ivxlcdm]+)(?:\s*[-–—]\s*(?:[0-9]+|[ivxlcdm]+))?\s*$",
+        r"(?:[,;:]?\s+)(?:book|books|part|volume|vol\.?|tome|dialogue|dialogues)\s*(?:no\.?\s*)?(?:[0-9]+|[ivxlcdm]+)(?:\s*[-–—]\s*(?:[0-9]+|[ivxlcdm]+))?\s*$",
         "",x,flags=re.I
     )
     x=re.sub(
-        r"(?:[,;:]?\s+)(?:sermon|sermons|homily|homilies|chapter|chapters|letter|letters|epistle|epistles)\s+[0-9]+(?:\s*[-–—]\s*[0-9]+)?\s*$",
+        r"(?:[,;:]?\s+)(?:sermon|sermons|homily|homilies|chapter|chapters|letter|letters|epistle|epistles|dialogue|dialogues)\s+[0-9]+(?:\s*[-–—]\s*[0-9]+)?\s*$",
         "",x,flags=re.I
     )
     x=re.sub(r"\bcommentary on (?:the )?gospel of\b","commentary on",x)
