@@ -228,7 +228,13 @@ ALIASES = {
     "Bardesanes": "Bardaisan of Edessa (dialogue recorded by Philip; attribution qualified)",
     "Clement": "Clement of Rome",
     "Venantius": "Venantius Fortunatus",
-    "Bardaisan": "Bardaisan of Edessa (dialogue recorded by Philip; attribution qualified)"
+    "Bardaisan": "Bardaisan of Edessa (dialogue recorded by Philip; attribution qualified)",
+    "Possidius": "Possidius of Calama",
+    "Pseudo-Clement": "Pseudo-Clement (anonymous)",
+    "Aristides": "Aristides of Athens",
+    "Commodianus": "Commodian",
+    "Venantius": "Venantius Honorius Clementianus Fortunatus (Venantius Fortunatus)",
+    "Venantius Fortunatus": "Venantius Honorius Clementianus Fortunatus (Venantius Fortunatus)",
 }
 def canonical_author(a):
     a = (a or "").strip()
