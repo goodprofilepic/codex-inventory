@@ -686,8 +686,11 @@ class Builder:
         if re.search(r"\bfragments?\b", title, re.I) or "[FRAGMENT]" in body.upper():
             self.skipped["fragment_or_excerpt"] += 1
             return False
-        if re.search(r"\b(?:dubious and spurious pieces|quotes on revelation|book\s*2\s*\(start\)|praefatio|prefatory address)\b", title, re.I):
+        if re.search(r"\b(?:dubious and spurious pieces|quotes on revelation|book\s*2\s*\(start\)|praefatio|from the discourse on the resurrection|new documents on philoxenus)\b", title, re.I):
             self.skipped["fragment_or_editorial"] += 1
+            return False
+        if author_key(author) == author_key("Malchion"):
+            self.skipped["fragmentary_attribution"] += 1
             return False
         if author_key(author) == author_key("Basil of Caesarea") and re.search(r"homil(?:y|ies)\s+on\s+psalm", title, re.I):
             self.skipped["rights_hold"] += 1
@@ -1311,6 +1314,11 @@ def add_gap_fillers(b):
         "Vincent of Lérins/THE COMMONITORY/A Commonitory.html",
         "Vincent of Lérins's treatise on the antiquity and universality of the Catholic faith; modern editorial introductions are not included.", 1000)
 
+    # Methodius's complete Banquet is a full work; never import Discourse 4 or the resurrection excerpt alone.
+    one("Methodius of Olympus", "The Banquet of the Ten Virgins",
+        "Methodius of Olympus/The Banquet of the Ten Virgins.html",
+        "Methodius of Olympus's complete dialogue on virginity, retaining all eleven discourses in the source text.", 1200)
+
     # New gaps by authors already in the catalogue: these are specific missing items, not duplicate editions.
     for author, title, rel in [
         ("John Cassian", "The Second Conference of Abbot Chaeremon (Conference 12)",
@@ -1452,7 +1460,7 @@ def write_outputs(b,out):
             "- Theological works spanning books/chapters are kept together rather than split into artificial entries.",
             "- Metadata headers use the requested ten fields: Title, Author, Date, Translator, Editor, Source Edition, Source URL, Description, Rights Status, Rights Notes.",
             "- Footnotes, apparatus, navigation, online-editor introductions, indexes and editorial clutter are removed where identifiable.",
-            "- Source repository README states that all its works are public domain; the Pelagius English renderings are additionally marked CC0 by Sophia Scriptura.",
+            "- Rights-sensitive translations and incomplete excerpts are held back; only identified public-domain or explicitly released text editions are included.",
             "","## Author counts",""]
     for a,n in sorted(counts.items(),key=lambda q:(-q[1],q[0].casefold())): readme.append(f"- {a}: {n}")
     readme += ["","## Heresiological coverage","",
@@ -1483,8 +1491,9 @@ def main():
     add_pelagius(b)
     add_manual(b)
     add_new_author_works(b)
-    add_gap_review_candidates(b,a.gap_review_csv)
+    # Protect curated gaps in currently represented authors before broad web-candidate fills.
     add_gap_fillers(b)
+    add_gap_review_candidates(b,a.gap_review_csv)
     build_auto(b)
     print(f"ELIGIBLE_BEFORE_TRIM={len(b.items)}")
     write_outputs(b,a.output_dir)
