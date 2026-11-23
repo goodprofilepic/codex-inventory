@@ -6,7 +6,7 @@ from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from difflib import SequenceMatcher
 from pathlib import Path
-from urllib.parse import quote, urljoin
+from urllib.parse import quote, urljoin, unquote, urlparse
 import requests
 from bs4 import BeautifulSoup, NavigableString, Tag
 
@@ -196,6 +196,8 @@ ALIASES = {
     "Vincent of Lerins": "Vincent of Lérins",
     "Archelaus": "Archelaus of Carrhae",
     "Archelaus of Carrhae": "Archelaus of Carrhae",
+    "Hegemonius": "Archelaus of Carrhae",
+    "Macarius of Egypt": "Pseudo-Macarius",
     "Augustine": "Augustine of Hippo",
     "St. Augustine": "Augustine of Hippo",
     "St Augustine": "Augustine of Hippo",
@@ -532,14 +534,74 @@ def metadata_for(author, rels, title, desc=""):
         "rights_notes": "The Writings-Database repository README states that all works in the collection are public domain. The historic source edition is identified above; editorial footnotes and apparatus have been removed from the reading text. See the source URL for the underlying transcription."
     }
 
+
+def source_path_key(value):
+    value = unquote(str(value or "")).replace("\\", "/").strip()
+    if not value:
+        return ""
+    if "://" in value:
+        path = urlparse(value).path
+        for marker in ("/blob/master/", "/master/"):
+            if marker in path:
+                value = path.split(marker, 1)[1]
+                break
+        else:
+            value = path
+    value = value.split("?", 1)[0].split("#", 1)[0].strip("/")
+    return re.sub(r"[^a-z0-9]+", "", unicodedata.normalize("NFKD", value).encode("ascii", "ignore").decode().casefold())
+
+def numbered_series_signature(value):
+    raw = clean(value or "").casefold()
+    patterns = [
+        (r"\bconference\s*([0-9]+|[ivxlcdm]+)\b", "conference"),
+        (r"^\s*([0-9]+)\.\s*(?:the\s+)?(?:first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|\w+)\s+conference\b", "conference"),
+        (r"\b(treatise|epistle|letter|sermon|homily|demonstration|oration|dialogue)\s*([0-9]+|[ivxlcdm]+)\b", None),
+    ]
+    roman = {"i":1,"v":5,"x":10,"l":50,"c":100,"d":500,"m":1000}
+    def to_int(v):
+        if v.isdigit(): return int(v)
+        total=0; prev=0
+        for c in reversed(v):
+            n=roman.get(c,0); total += -n if n < prev else n; prev=max(prev,n)
+        return total
+    for pattern, fixed in patterns:
+        m=re.search(pattern,raw,re.I)
+        if not m: continue
+        if fixed:
+            return (fixed,to_int(m.group(1)))
+        kind=m.group(1).casefold()
+        if kind in ("letter","epistle"): kind="epistle"
+        return (kind,to_int(m.group(2)))
+    return None
+
+def source_is_known_compound(author, candidate, existing):
+    ak=author_key(author)
+    c=norm(candidate); e=norm(existing)
+    if ak == author_key("Pseudo-Macarius") and "fifty spiritual homilies" in c and "fifty spiritual homilies" in e:
+        return True
+    if ak == author_key("Aphrahat the Persian Sage") and "demonstrations" in e and re.search(r"\bdemonstration\s+[0-9]+\b", candidate, re.I):
+        return True
+    if ak == author_key("Cyprian of Carthage") and re.search(r"\btreatise\s*12\b", candidate, re.I) and re.search(r"\btreatise\s*12\b", existing, re.I):
+        return True
+    if ak == author_key("Basil of Caesarea"):
+        if "hexaemeron" in c and "hexaemeron" in e and numbered_series_signature(candidate)==numbered_series_signature(existing):
+            return True
+    stripped=re.sub(r"^\s*sermon\s+\d+\s*[-:—–]*\s*", "", candidate, flags=re.I)
+    if stripped and norm(stripped)==e:
+        return True
+    return False
+
 class Builder:
     def __init__(self, root, inventory_path, prior_batch_manifest=None):
         self.root = root; self.items = []; self.known = defaultdict(list); self.seen = set()
+        self.known_paths = set(); self.seen_paths = set()
         self.skipped = defaultdict(int)
         with inventory_path.open(encoding="utf-8-sig", newline="") as f:
             for r in csv.DictReader(f, delimiter=";"):
                 ak = author_key(r.get("attributed_author", "")); t = r.get("title", "")
                 if ak and t: self.known[ak].append(t)
+                sk=source_path_key(r.get("source_url",""))
+                if sk: self.known_paths.add(sk)
         self.prior_batch_rows = 0
         if prior_batch_manifest:
             with prior_batch_manifest.open(encoding="utf-8-sig", newline="") as f:
@@ -548,12 +610,24 @@ class Builder:
                     if ak and t:
                         self.known[ak].append(t)
                         self.prior_batch_rows += 1
+                    for value in [r.get("source_url",""), *(r.get("source_files","") or "").split(";")]:
+                        sk=source_path_key(value)
+                        if sk: self.known_paths.add(sk)
         print(f"PRIOR_BATCH_ROWS_EXCLUDED={self.prior_batch_rows}")
+        print(f"INVENTORY_AND_PRIOR_SOURCE_IDENTITIES={len(self.known_paths)}")
 
-    def duplicate(self, author, title):
+    def duplicate(self, author, title, rels=()):
         ak = author_key(author)
+        for rel in rels:
+            sk=source_path_key(rel)
+            if sk and (sk in self.known_paths or sk in self.seen_paths):
+                return True
         for old in self.known.get(ak, []):
-            if titles_match(title, old, author):
+            if titles_match(title, old, author) or source_is_known_compound(author,title,old):
+                return True
+            c_sig=numbered_series_signature(title)
+            o_sig=numbered_series_signature(old)
+            if c_sig and o_sig and c_sig==o_sig:
                 return True
         # Work-level safeguards for catalogued collections whose title differs from the imported edition.
         existing = self.known.get(ak, [])
@@ -585,14 +659,17 @@ class Builder:
         words = len(re.findall(r"\S+", body))
         if len(body) < 700 or words < min_words:
             self.skipped["too_short"] += 1; return False
-        if self.duplicate(author, title):
-            self.skipped["inventory_duplicate"] += 1; return False
+        if self.duplicate(author, title, rels):
+            self.skipped["inventory_or_prior_source_duplicate"] += 1; return False
         ak = author_key(author)
         if any(author_key(item["author"]) == ak and titles_match(title, item["title"], author) for item in self.items):
             self.skipped["batch_duplicate"] += 1; return False
         m = meta or metadata_for(author, rels, title)
         translator = (m.get("translator") or "").strip() or "Not identified in source edition"
         editor = (m.get("editor") or "").strip() or "Not identified in source edition"
+        for rel in rels:
+            sk=source_path_key(rel)
+            if sk: self.seen_paths.add(sk)
         self.items.append({
             "author": author, "title": title, "body": body, "rels": rels,
             "date": m.get("date",""), "translator": translator, "editor": editor,
@@ -1002,7 +1079,7 @@ def add_gap_review_candidates(b, gap_csv):
     per_author = defaultdict(int)
     # Fetch a bounded candidate window concurrently, then preserve round-robin order
     # for deterministic author balance and titles in the final batch.
-    fetch_window = ordered[:480]
+    fetch_window = ordered[:1600]
     fetched = {}
     def fetch_page(item):
         try:
@@ -1019,7 +1096,7 @@ def add_gap_review_candidates(b, gap_csv):
         if len(b.items) >= TARGET:
             break
         ak = author_key(item["author"])
-        if per_author[ak] >= 24:
+        if per_author[ak] >= 40:
             continue
         attempted += 1
         raw, fetch_error = fetched.get(id(item), (None, RuntimeError("missing concurrent fetch result")))
