@@ -664,12 +664,20 @@ def html_to_text_newadvent(raw, title):
     body = soup.body or soup
     for node in list(body.find_all(["script", "style", "nav", "header", "footer", "form", "svg", "img"])):
         node.decompose()
-    # Remove only the banner/link itself. Never decompose a broad wrapper div:
-    # New Advent sometimes nests the whole work inside the same wrapper.
-    for node in list(body.find_all(["p", "a"])):
+    # Remove links first, then their containing paragraphs. This avoids touching
+    # detached nested tags whose attrs are cleared by BeautifulSoup.decompose().
+    for node in list(body.find_all("a")):
+        if getattr(node, "attrs", None) is None:
+            continue
         tx = node.get_text(" ", strip=True).casefold()
         href = (node.get("href") or "").casefold()
-        if ("please help support the mission of new advent" in tx and len(tx) < 650) or "gumroad.com" in href or tx == "search:":
+        if "please help support the mission of new advent" in tx or "gumroad.com" in href:
+            node.decompose()
+    for node in list(body.find_all("p")):
+        if getattr(node, "attrs", None) is None:
+            continue
+        tx = node.get_text(" ", strip=True).casefold()
+        if ("please help support the mission of new advent" in tx and len(tx) < 650) or tx == "search:":
             node.decompose()
     wanted = norm(title)
     heading = None
