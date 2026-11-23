@@ -1,0 +1,55 @@
+name: Prepare Scriptorium 300-Work Reading Room Batch
+
+on:
+  push:
+    branches:
+      - codex/reading-room-batch-300-2026-11-22
+
+permissions:
+  contents: read
+
+jobs:
+  prepare-acquisition:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Check out inventory and acquisition scripts
+        uses: actions/checkout@v4
+        with:
+          ref: codex/reading-room-batch-300-2026-11-22
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install text extraction tools and parser dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y antiword
+          python -m pip install --disable-pip-version-check beautifulsoup4 requests
+      - name: Download public historical Christian source collection
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -L --fail --retry 3 --retry-delay 2 \
+            "https://codeload.github.com/HistoricalChristianFaith/Writings-Database/zip/refs/heads/master" \
+            -o /tmp/writings-database.zip
+          mkdir -p /tmp/writings-database
+          unzip -q /tmp/writings-database.zip -d /tmp/writings-database
+          SOURCE_DIR="$(find /tmp/writings-database -mindepth 1 -maxdepth 1 -type d | head -n 1)"
+          test -n "$SOURCE_DIR"
+          echo "SOURCE_DIR=$SOURCE_DIR" >> "$GITHUB_ENV"
+      - name: Build 300 new works after current and prior-batch duplicate screening
+        run: |
+          python scripts/prepare_scriptorium_batch_300.py \
+            --source-dir "$SOURCE_DIR" \
+            --inventory-csv reading-room-inventory-latest-11-22-26.csv \
+            --previous-batch-csv previous-batch-200-exclusions.csv \
+            --output-dir build/scriptorium-reading-room-batch-300
+      - name: Upload ZIP, manifest, README and audit
+        uses: actions/upload-artifact@v4
+        with:
+          name: scriptorium-reading-room-batch-300-2026-11-22
+          path: build/scriptorium-reading-room-batch-300/
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
