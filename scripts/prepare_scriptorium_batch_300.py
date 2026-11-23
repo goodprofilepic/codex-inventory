@@ -720,6 +720,18 @@ class Builder:
 
     def add(self, author, title, body, rels, meta=None, min_words=120):
         author = canonical_author(author)
+        # The source vault also contains Jewish, pagan and reference-only material.
+        # Keep those out even if they arrive through the separate gap-review feed.
+        scope_identity=norm(" ".join([author,title,*rels]))
+        out_of_scope=(
+            "alexanderoflycopolis","ammoniusofalexandria","josephus",
+            "philoofalexandria","papias the lexicographer".replace(" ",""),
+            "oresiesisheru","codexveronensis","bookofenoch","bookofjubilees",
+            "sibyllineoracles","testamentsofthetwelvepatriarchs"
+        )
+        if any(term in scope_identity for term in out_of_scope):
+            self.skipped["non_christian_or_out_of_scope"] += 1
+            return False
         body = strip_editorial_apparatus(clean(body))
         # Keep this Reading Room batch focused on complete writings rather than
         # separately catalogued fragments or sermon excerpts.
