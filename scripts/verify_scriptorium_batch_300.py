@@ -483,7 +483,7 @@ def main():
         seen[ak].append(title)
     non_christian=[]
     out_of_scope=(
-        "alexanderoflycopolis","ammoniusofalexandria","josephus",
+        "alexanderoflycopolis","josephus",
         "philoofalexandria","papias the lexicographer".replace(" ",""),
         "oresiesisheru","codexveronensis","bookofenoch","bookofjubilees",
         "sibyllineoracles","testamentsofthetwelvepatriarchs"
