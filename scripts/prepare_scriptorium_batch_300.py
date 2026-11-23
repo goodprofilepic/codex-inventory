@@ -450,6 +450,7 @@ def work_overlap(candidate, existing, author=None):
     if ak == author_key("Ignatius of Antioch"):
         def simplify(v):
             x=re.sub(r"^(?:epistle\s+to\s+|ignatius\s+to\s+|to\s+)", "", v.casefold().strip())
+            x=re.sub(r"^st\.?\s+", "", x)
             x=re.sub(r"\s*(?:\(|—|-)?\s*(?:longer recension|syriac version)\)?$", "", x).strip()
             return x
         if simplify(candidate) == simplify(existing):
