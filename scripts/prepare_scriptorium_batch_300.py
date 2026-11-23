@@ -697,6 +697,12 @@ class Builder:
             self.skipped["rights_hold"] += 1
             return False
         rights_identity = (author + " " + title + " " + " ".join(rels)).casefold()
+        if any(name in rights_identity for name in (
+            "john litteral", "translation-litteral", "gleason l. archer",
+            "albert c. outler", "sister agnes clare way"
+        )):
+            self.skipped["rights_hold"] += 1
+            return False
         if ("oecumenius" in rights_identity and ("litteral" in rights_identity or "translation" in rights_identity)):
             self.skipped["rights_hold"] += 1
             return False
