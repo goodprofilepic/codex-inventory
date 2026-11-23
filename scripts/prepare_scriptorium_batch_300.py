@@ -998,49 +998,6 @@ def add_new_author_works(b):
                      "rights_notes":"The source transcription explicitly labels the 1921 English edition public domain in the United States. The translator's introduction is excluded; the homilies and their original headings are retained. Attribution is stated cautiously as Pseudo-Macarius."})
         b.add("Pseudo-Macarius", "Fifty Spiritual Homilies", body, [rel], meta, 10000)
 
-    # Alexander of Lycopolis: complete 1886 public-domain English translation from New Advent.
-    try:
-        url = "https://www.newadvent.org/fathers/0618.htm"
-        response = SESSION.get(url, timeout=45)
-        response.raise_for_status()
-        soup = BeautifulSoup(response.text, "html.parser")
-        marker = None
-        for tag in soup.find_all(["h1", "h2", "h3", "h4", "h5", "h6", "b", "strong"]):
-            if re.match(r"^Chapter\s+1\b", tag.get_text(" ", strip=True), re.I):
-                marker = tag
-                break
-        if marker is None:
-            for node in soup.find_all(string=re.compile(r"^\s*Chapter\s+1\b", re.I)):
-                marker = node.parent
-                break
-        if marker is None:
-            raise RuntimeError("Chapter 1 anchor not found on New Advent page")
-        container = marker
-        while container.parent and (len(container.get_text(" ", strip=True)) < 15000 or not re.search(r"Chapter\s+10\b", container.get_text(" ", strip=True), re.I)):
-            container = container.parent
-        def trim_before(node, target):
-            for child in list(node.contents):
-                if child is target:
-                    return True
-                contains = child is target or (isinstance(child, Tag) and target in child.descendants)
-                if contains:
-                    trim_before(child, target)
-                    return True
-                child.extract()
-            return False
-        trim_before(container, marker)
-        body = html_to_text(str(container))
-        meta = metadata_for("Alexander of Lycopolis", ["New Advent: Church Fathers 0618"], "Of the Manicheans",
-                            "Alexander of Lycopolis's surviving treatise examining Manichaean teaching, in the 1886 Ante-Nicene Fathers translation.")
-        meta.update({"date":"early fourth century (c. AD 301)", "translator":"James B. H. Hawkins",
-                     "editor":"Alexander Roberts, James Donaldson, and A. Cleveland Coxe",
-                     "edition":"Ante-Nicene Fathers, Vol. VI (1886)", "url":url,
-                     "rights_notes":"The English translation appeared in the 1886 Ante-Nicene Fathers, Vol. VI. The translator is credited as James B. H. Hawkins. Introductory notices and navigation are excluded; the treatise begins at Chapter 1."})
-        b.add("Alexander of Lycopolis", "Of the Manicheans", body, ["New Advent: Church Fathers 0618"], meta, 1500)
-        print("NEW_AUTHOR_SOURCE=Alexander of Lycopolis | Of the Manicheans")
-    except Exception as e:
-        print(f"NEW_AUTHOR_SOURCE_SKIPPED=Alexander of Lycopolis: {e}")
-
     # Maruthas's surviving English witness says it is only part of the whole work; omit it.
 
 def html_to_text_newadvent(raw, title):
@@ -1492,7 +1449,8 @@ def build_extended_source_pool(b):
         # Non-Christian/Jewish source material is not used to pad a Christian library batch.
         "Josephus","Philo of Alexandria","Book of Enoch","Book of Jubilees",
         "Book of Biblical Antiquities","Sibylline Oracles","Testaments of the Twelve Patriarchs",
-        "Oresiesis-Heru-sa Ast","Papias the Lexicographer","Codex Veronensis"
+        "Oresiesis-Heru-sa Ast","Papias the Lexicographer","Codex Veronensis",
+        "Ammonius of Alexandria","Alexander of Lycopolis","James","John","Jude"
     }
     blocked=(
         "/fragments","/doubtful","/spurious","preface","introduction","translator",
