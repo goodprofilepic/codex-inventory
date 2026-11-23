@@ -433,7 +433,11 @@ def main():
             key=source_path_key(value)
             if key:
                 path_matches += inventory_paths.get(key,[]) + prior_paths.get(key,[])
-        title_matches=[old for old in by_author.get(ak,[]) if title_match(title,old,row.get("author",""))]
+        sig=numbered_series_signature(title)
+        title_matches=[old for old in by_author.get(ak,[]) if (
+            title_match(title,old,row.get("author",""))
+            or (sig and sig==numbered_series_signature(old))
+        )]
         hits=sorted(set(path_matches + title_matches))
         if hits:
             inventory_hits.append((row.get("author",""),title,hits))
