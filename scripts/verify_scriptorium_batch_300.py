@@ -148,6 +148,8 @@ def special_overlap(candidate: str, existing: str, author: str | None = None) ->
         return True
     if ak == author_key("Lactantius") and "workmanship of god" in c and "workmanship of god" in e:
         return True
+    if ak == author_key("Eusebius of Caesarea") and "constantine" in c and "constantine" in e and "oration" in c and "oration" in e:
+        return True
     if ak == author_key("Basil of Caesarea") and "on the spirit" in c and "holy spirit" in e:
         return True
     if ak == author_key("Ignatius of Antioch"):
