@@ -286,7 +286,7 @@ def division_signature(value):
     """Return a trailing volume/letter/homily number when the title is a part of a series."""
     raw = clean(value).casefold()
     m = re.search(
-        r"(?:[,;:]?\s+)(book|part|volume|vol\.?|tome|letter|epistle|sermon|homily|discourse|chapter)\s*"
+        r"(?:[,;:]?\s+)(book|part|volume|vol\.?|tome|letter|epistle|sermon|homily|discourse|chapters?)\s*"
         r"(?:no\.?\s*)?([0-9]+|[ivxlcdm]+)(?:\s*[-–—]\s*([0-9]+|[ivxlcdm]+))?\s*$",
         raw, re.I
     )
