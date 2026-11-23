@@ -177,9 +177,12 @@ ALIASES = {
     "Venantius": "Venantius Fortunatus",
     "Bardaisan": "Bardaisan of Edessa (dialogue recorded by Philip; attribution qualified)"
 }
-def author_key(a):
+def canonical_author(a):
     a = (a or "").strip()
-    return norm(ALIASES.get(a, a))
+    return ALIASES.get(a, a)
+
+def author_key(a):
+    return norm(canonical_author(a))
 
 TITLE_EQUIVALENTS = {
     norm("A Treatise to Prove that No One Can Harm the Man Who Does Not Injure Himself"):
@@ -283,7 +286,7 @@ def division_signature(value):
     """Return a trailing volume/letter/homily number when the title is a part of a series."""
     raw = clean(value).casefold()
     m = re.search(
-        r"(?:[,;:]?\s+)(book|part|volume|vol\.?|tome|letter|epistle|sermon|homily|discourse)\s*"
+        r"(?:[,;:]?\s+)(book|part|volume|vol\.?|tome|letter|epistle|sermon|homily|discourse|chapter)\s*"
         r"(?:no\.?\s*)?([0-9]+|[ivxlcdm]+)(?:\s*[-–—]\s*([0-9]+|[ivxlcdm]+))?\s*$",
         raw, re.I
     )
@@ -310,7 +313,7 @@ def title_base_keys(value):
     raw = re.sub(r"\s*\([^)]*\)", "", raw)
     raw = re.sub(r"\s*\[[^]]*\]", "", raw)
     raw = re.sub(
-        r"(?:[,;:]?\s+)(?:book|part|volume|vol\.?|tome)\s*"
+        r"(?:[,;:]?\s+)(?:book|part|volume|vol\.?|tome|chapter|chapters)\s*"
         r"(?:no\.?\s*)?(?:[0-9]+|[ivxlcdm]+)(?:\s*[-–—]\s*(?:[0-9]+|[ivxlcdm]+))?\s*$",
         "", raw, flags=re.I
     )
@@ -439,6 +442,7 @@ class Builder:
         return False
 
     def add(self, author, title, body, rels, meta=None, min_words=120):
+        author = canonical_author(author)
         body = clean(body); words = len(re.findall(r"\S+", body))
         if len(body) < 700 or words < min_words:
             self.skipped["too_short"] += 1; return False
@@ -457,10 +461,12 @@ class Builder:
         return True
 
     def add_single(self, author, title, rel, desc="", min_words=120):
+        author = canonical_author(author)
         body = read_html(self.root, rel)
         return self.add(author, title, body, [rel], metadata_for(author, [rel], title, desc), min_words)
 
     def add_group(self, author, title, rels, desc="", min_words=300):
+        author = canonical_author(author)
         parts = []
         for rel in sorted(rels, key=natural_key):
             body = read_html(self.root, rel)
