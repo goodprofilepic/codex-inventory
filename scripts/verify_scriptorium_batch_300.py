@@ -67,6 +67,12 @@ ALIASES = {
     "st ignatius": "ignatius of antioch",
     "bardesanes": "bardaisan of edessa dialogue recorded by philip attribution qualified",
     "bardaisan": "bardaisan of edessa dialogue recorded by philip attribution qualified",
+    "possidius": "possidius of calama",
+    "pseudo-clement": "pseudo-clement anonymous",
+    "aristides": "aristides of athens",
+    "commodianus": "commodian",
+    "venantius": "venantius honorius clementianus fortunatus venantius fortunatus",
+    "venantius fortunatus": "venantius honorius clementianus fortunatus venantius fortunatus",
     "clement": "clement of rome",
     "venantius": "venantius fortunatus",
 }
