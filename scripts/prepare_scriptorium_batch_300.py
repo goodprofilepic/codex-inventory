@@ -724,7 +724,7 @@ class Builder:
         # Keep those out even if they arrive through the separate gap-review feed.
         scope_identity=norm(" ".join([author,title,*rels]))
         out_of_scope=(
-            "alexanderoflycopolis","ammoniusofalexandria","josephus",
+            "alexanderoflycopolis","josephus",
             "philoofalexandria","papias the lexicographer".replace(" ",""),
             "oresiesisheru","codexveronensis","bookofenoch","bookofjubilees",
             "sibyllineoracles","testamentsofthetwelvepatriarchs"
@@ -1462,7 +1462,7 @@ def build_extended_source_pool(b):
         "Josephus","Philo of Alexandria","Book of Enoch","Book of Jubilees",
         "Book of Biblical Antiquities","Sibylline Oracles","Testaments of the Twelve Patriarchs",
         "Oresiesis-Heru-sa Ast","Papias the Lexicographer","Codex Veronensis",
-        "Ammonius of Alexandria","Alexander of Lycopolis","James","John","Jude"
+        "Alexander of Lycopolis","James","John","Jude"
     }
     blocked=(
         "/fragments","/doubtful","/spurious","preface","introduction","translator",
