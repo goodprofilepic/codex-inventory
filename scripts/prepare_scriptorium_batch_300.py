@@ -573,9 +573,11 @@ class Builder:
         if any(author_key(item["author"]) == ak and titles_match(title, item["title"], author) for item in self.items):
             self.skipped["batch_duplicate"] += 1; return False
         m = meta or metadata_for(author, rels, title)
+        translator = (m.get("translator") or "").strip() or "Not identified in source edition"
+        editor = (m.get("editor") or "").strip() or "Not identified in source edition"
         self.items.append({
             "author": author, "title": title, "body": body, "rels": rels,
-            "date": m.get("date",""), "translator": m.get("translator",""), "editor": m.get("editor",""),
+            "date": m.get("date",""), "translator": translator, "editor": editor,
             "edition": m.get("edition",""), "url": m.get("url",raw_url(rels[0])),
             "description": m.get("description",""), "rights_notes": m.get("rights_notes","")
         })
