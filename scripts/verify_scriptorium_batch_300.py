@@ -120,6 +120,10 @@ def source_path_key(value: str) -> str:
         else:
             value = path
     value = value.split("?", 1)[0].split("#", 1)[0].strip("/")
+    parts=value.split("/")
+    while parts and parts[0].casefold() in {"writings_db_snapshot","writings-database-master","writings-database"}:
+        parts.pop(0)
+    value="/".join(parts)
     return re.sub(r"[^a-z0-9]+", "", unicodedata.normalize("NFKD", value).encode("ascii", "ignore").decode().casefold())
 
 def numbered_series_signature(value: str):
