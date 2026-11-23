@@ -478,12 +478,19 @@ def main():
         if len(gkey)>=16 and gkey in seen_global:
             batch_hits.append((row.get("author",""),title,"same exact title under another author"))
         seen_global.add(gkey)
+        # source_url commonly repeats the first source_files entry in the same row.
+        # Deduplicate within-row before comparing against earlier manifest rows.
+        row_path_keys=set()
         for value in [row.get("source_url",""), *(row.get("source_files","") or "").split(";")]:
             key=source_path_key(value)
-            if key and key in seen_paths:
-                batch_hits.append((row.get("author",""),title,seen_paths[key]))
-            elif key:
-                seen_paths[key]=f'{row.get("author","")} — {title}'
+            if not key or key in row_path_keys:
+                continue
+            row_path_keys.add(key)
+            if key in seen_paths:
+                seen_author, seen_title = seen_paths[key]
+                batch_hits.append((row.get("author",""),title,f"{seen_author} — {seen_title}"))
+            else:
+                seen_paths[key]=(row.get("author",""),title)
         seen[ak].append(title)
     required=["title","author","source_edition","source_url","words","characters","rights_status","description","rights_notes"]
     missing_metadata=[]
