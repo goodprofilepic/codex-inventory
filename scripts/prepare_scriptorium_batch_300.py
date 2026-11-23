@@ -719,6 +719,9 @@ class Builder:
         if re.search(r"\bfragments?\b", title, re.I) or "[FRAGMENT]" in body.upper():
             self.skipped["fragment_or_excerpt"] += 1
             return False
+        if author_key(author) == author_key("Origen of Alexandria") and norm(title) in {"from greek","from latin"}:
+            self.skipped["fragment_or_excerpt"] += 1
+            return False
         if author_key(author) == author_key("Methodius of Olympus") and "banquet of the ten virgins" in title.casefold() and re.search(r"\bdiscourse\s*4\b", title, re.I):
             self.skipped["fragment_or_excerpt"] += 1
             return False
@@ -1501,6 +1504,8 @@ def build_extended_source_pool(b):
 
         def author_for(directory):
             rel=directory.relative_to(root).as_posix().casefold()
+            if top.name=="Tyrannius Rufinus" and "jerome's apology for himself against the books of rufinus" in rel:
+                return "Jerome"
             if top.name=="Clement of Rome" and "pseudo-clement" in rel:
                 return "Pseudo-Clement (anonymous)"
             if top.name=="Hegesippus" and "pseudo-hegesippus" in rel:
@@ -1524,8 +1529,14 @@ def build_extended_source_pool(b):
             if not files: continue
             actual=author_for(directory)
             stems=[p.stem.replace("_"," ").strip() for p in files]
+            if directory.name.casefold() == "from greek":
+                # Origen's Greek source files are short papyrus/catena fragments, not a standalone work.
+                continue
             if len(files)>=2 and all(structural.match(x) for x in stems):
-                title=directory.name.replace("_"," ").strip()
+                if top.name=="Origen of Alexandria" and directory.name.casefold()=="from latin":
+                    title="Commentary on Romans"
+                else:
+                    title=directory.name.replace("_"," ").strip()
                 if title.casefold() in {"first book - visions","second book - commandments","third book - similitudes"}:
                     continue
                 rels=[p.relative_to(root).as_posix() for p in files]
