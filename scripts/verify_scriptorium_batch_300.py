@@ -140,10 +140,17 @@ def numbered_series_signature(value: str):
     for pattern,fixed in patterns:
         m=re.search(pattern,raw,re.I)
         if not m: continue
-        if fixed: return fixed,integer(m.group(1))
-        kind=m.group(1).casefold()
-        if kind in ("letter","epistle"): kind="epistle"
-        return kind,integer(m.group(2))
+        if fixed:
+            kind=fixed
+            number=integer(m.group(1))
+        else:
+            kind=m.group(1).casefold()
+            if kind in ("letter","epistle"): kind="epistle"
+            number=integer(m.group(2))
+        # Keep the work's subject/context with the number so Homily 1 on Judges
+        # cannot collide with Homily 1 on Isaiah.
+        context=norm(raw[m.end():])
+        return kind,number,context
     return None
 
 def special_overlap(candidate: str, existing: str, author: str | None = None) -> bool:
@@ -367,44 +374,20 @@ def work_overlap(candidate: str, existing: str, author: str | None = None) -> bo
             return True
     return False
 
-def title_match(candidate: str, existing: str, author: str | None = None) -> bool:
-    if special_overlap(candidate, existing, author): return True
+def strict_title_match(candidate: str, existing: str, author: str | None = None) -> bool:
+    # Exact normalized title, explicit alternate-title rules, known whole-work overlaps,
+    # or a numbered work with the same subject/context. Avoid generic fuzzy matching:
+    # different homily cycles and apologetic replies are separate works.
+    if global_title_key(candidate) == global_title_key(existing):
+        return True
+    if special_overlap(candidate, existing, author):
+        return True
     if work_overlap(candidate, existing, author):
         return True
-    if variants(candidate, author) & variants(existing, author): return True
-    cd,ed=division(candidate),division(existing)
-    cb,eb=base_key(candidate),base_key(existing)
-    if cb and cb==eb:
-        # Different numbered volumes remain distinct unless one inventory title denotes a full range.
-        if cd and ed:
-            if cd[0]!=ed[0]: return False
-            return not (cd[2] < ed[1] or ed[2] < cd[1])
-        return True
-    # Existing collection headings can already contain individually enumerated items.
-    en=norm(existing)
-    cn=norm(candidate)
-    if en in {"letters","epistles","correspondence"} and re.search(r"\b(letter|epistle)\b",cn):
-        return True
-    if en in {"homilies","sermons"} and re.search(r"\b(homily|sermon)\b",cn):
-        return True
-    # A correspondence volume may already be represented by separately catalogued named letters.
-    if "olympias" in cn and re.search(r"\b(letters|correspondence)\b",cn) and "olympias" in en and re.search(r"\bto olympias\b",en):
-        return True
-    # An existing grouped set of psalm homilies covers each component homily by the same author.
-    if author and author_key(author)==author_key("Hilary of Poitiers") and "homilies on psalms" in en and "homily on psalm" in cn:
-        old_nums=set(re.findall(r"\d+",existing)); new_nums=set(re.findall(r"\d+",candidate))
-        if new_nums and new_nums.issubset(old_nums):
-            return True
-    # Treat numbered items within an explicitly overlapping range as present.
-    if cd and ed and cd[0]==ed[0] and cd[1] is not None and ed[1] is not None:
-        if cd[1] >= ed[1] and cd[1] <= ed[2] and cb==eb: return True
-    # Do not fuzzy-match adjacent numbered works or sermons from different years.
-    if re.findall(r"\d+", candidate) != re.findall(r"\d+", existing):
-        return False
-    # Conservative fuzzy fallback after punctuation / editor subtitles are removed.
-    ca=norm(re.sub(r"\s*\([^)]*\)","",candidate))
-    ea=norm(re.sub(r"\s*\([^)]*\)","",existing))
-    return min(len(ca),len(ea))>=22 and SequenceMatcher(None,ca,ea).ratio()>=0.96
+    cs=numbered_series_signature(candidate)
+    es=numbered_series_signature(existing)
+    return bool(cs and es and cs==es)
+
 
 def read_rows(path: Path, delimiter: str=";"):
     with path.open(encoding="utf-8-sig",newline="") as f:
@@ -454,8 +437,7 @@ def main():
                 path_matches += inventory_paths.get(key,[]) + prior_paths.get(key,[])
         sig=numbered_series_signature(title)
         title_matches=[old for old in by_author.get(ak,[]) if (
-            title_match(title,old,row.get("author",""))
-            or (sig and sig==numbered_series_signature(old))
+            strict_title_match(title,old,row.get("author",""))
         )]
         gkey=global_title_key(title)
         global_match=(len(gkey)>=16 and gkey in global_titles)
@@ -472,7 +454,7 @@ def main():
         for old in seen[ak]:
             sig=numbered_series_signature(title)
             old_sig=numbered_series_signature(old)
-            if title_match(title,old,row.get("author","")) or special_overlap(title,old,row.get("author","")) or (sig and sig==old_sig):
+            if strict_title_match(title,old,row.get("author","")):
                 batch_hits.append((row.get("author",""),title,old))
         gkey=global_title_key(title)
         if len(gkey)>=16 and gkey in seen_global:
