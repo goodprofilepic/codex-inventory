@@ -259,15 +259,17 @@ def is_generic_collection(title: str) -> bool:
 
 
 def work_overlap(candidate: str, existing: str, author: str | None = None) -> bool:
-    ak=author_key(author or "")
-    c=norm(candidate); e=norm(existing)
-    if ak==author_key("John Chrysostom"):
-        if c==norm("Letters to Olympias") and ("to olympias" in e or "to my lady" in e):
+    ak = author_key(author or "")
+    compact = lambda s: re.sub(r"[^a-z0-9]+", "", unicodedata.normalize("NFKD", s or "").encode("ascii", "ignore").decode().casefold())
+    c = compact(candidate)
+    e = compact(existing)
+    if ak == author_key("John Chrysostom"):
+        if c == compact("Letters to Olympias") and (compact("to olympias") in e or compact("to my lady") in e):
             return True
-        if c==norm("To Theodore After His Fall") and e in {norm("Letter 1"),norm("Letter 2")}:
+        if c == compact("To Theodore After His Fall") and e in {compact("Letter 1"), compact("Letter 2")}:
             return True
-    if ak==author_key("Hilary of Poitiers"):
-        if re.fullmatch(r"homily on psalm (1|53|130)",c) and "homilies on psalms 1 53 and 130" in e:
+    if ak == author_key("Hilary of Poitiers"):
+        if re.fullmatch(r"homilyonpsalm(1|53|130)", c) and compact("Homilies on Psalms 1, 53, and 130") in e:
             return True
     return False
 
