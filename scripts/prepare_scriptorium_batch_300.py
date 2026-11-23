@@ -235,6 +235,9 @@ ALIASES = {
     "Commodianus": "Commodian",
     "Venantius": "Venantius Honorius Clementianus Fortunatus (Venantius Fortunatus)",
     "Venantius Fortunatus": "Venantius Honorius Clementianus Fortunatus (Venantius Fortunatus)",
+    "Caius": "Caius of Rome",
+    "Arnobius": "Arnobius of Sicca",
+    "Anonymous; transmitted under Clement's name": "Pseudo-Clement (anonymous)",
 }
 def canonical_author(a):
     a = (a or "").strip()
@@ -932,9 +935,12 @@ def add_gap_review_candidates(b, gap_csv):
                 continue
             if not author or author.casefold() in {"anonymous", "anonymous (early christian community)", "symmachus", "mara bar serapion", "dionysius", "tertullian", "theodotus"}:
                 continue
-            if author.casefold() == "clement" and title.casefold() == "two epistles on virginity":
+            if author.casefold() == "clement" and title.casefold() in {"two epistles on virginity", "the second epistle"}:
                 author = "Pseudo-Clement"
-                title = "Two Epistles on Virginity (Pseudo-Clementine)"
+                if title.casefold() == "two epistles on virginity":
+                    title = "Two Epistles on Virginity (Pseudo-Clementine)"
+                else:
+                    title = "Second Epistle of Clement to the Corinthians"
             if author.casefold() == "pseudo-clement" and title.casefold() == "the second epistle":
                 title = "Second Epistle of Clement to the Corinthians"
             if title.casefold() == "history of armenia" or title.casefold() == "clementine homilies, introductory epistles":
