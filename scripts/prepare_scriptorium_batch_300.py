@@ -1194,7 +1194,7 @@ def add_gap_review_candidates(b, gap_csv):
     per_author = defaultdict(int)
     # Fetch a bounded candidate window concurrently, then preserve round-robin order
     # for deterministic author balance and titles in the final batch.
-    fetch_window = ordered[:1600]
+    fetch_window = ordered[:240]
     fetched = {}
     def fetch_page(item):
         try:
