@@ -210,6 +210,19 @@ TITLE_EQUIVALENTS = {
     norm("Fifth Theological Oration"): norm("Oration 31"),
     norm("The First Theological Oration"): norm("Oration 27"),
     norm("First Theological Oration"): norm("Oration 27"),
+    norm("On Two Souls"): norm("Concerning Two Souls, Against the Manichaeans"),
+    norm("Care for the Dead"): norm("On Care to Be Had for the Dead"),
+    norm("Enchiridion"): norm("Handbook on Faith, Hope and Love"),
+    norm("Paedagogus"): norm("The Instructor"),
+    norm("On the Instructor"): norm("The Instructor"),
+    norm("Stromata"): norm("The Stromata, or Miscellanies"),
+    norm("De Monarchia"): norm("On the Sole Government of God"),
+    norm("The First Apology"): norm("The First Apology of Justin"),
+    norm("Apologia de Fuga"): norm("Defence of His Flight"),
+    norm("De Sententia Dionysii"): norm("On the Opinion of Dionysius"),
+    norm("Ad Episcopus Aegypti et Libyae"): norm("To the Bishops of Egypt"),
+    norm("Ad Afros Epistola Synodica"): norm("To the Bishops of Africa"),
+    norm("De Spiritu Sancto"): norm("On the Holy Spirit"),
 }
 
 def title_variants(value, author=None):
