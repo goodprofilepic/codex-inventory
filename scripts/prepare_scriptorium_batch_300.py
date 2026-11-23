@@ -234,6 +234,10 @@ def author_key(a):
     return norm(canonical_author(a))
 
 TITLE_EQUIVALENTS = {
+    norm("Commonitorium"): norm("A Commonitory"),
+    norm("A Commonitory"): norm("Commonitorium"),
+    norm("Against Publishing the Errors"): norm("Against Publishing the Errors of the Brethren"),
+    norm("Against Publishing the Errors of the Brethren"): norm("Against Publishing the Errors"),
     norm("A Treatise to Prove that No One Can Harm the Man Who Does Not Injure Himself"):
         norm("No One Can Harm the Man Who Does Not Injure Himself"),
     norm("A Treatise on Grace and Free Will"): norm("On Grace and Free Will"),
