@@ -74,7 +74,10 @@ ALIASES = {
     "venantius": "venantius honorius clementianus fortunatus venantius fortunatus",
     "venantius fortunatus": "venantius honorius clementianus fortunatus venantius fortunatus",
     "clement": "clement of rome",
-    "venantius": "venantius fortunatus",
+    "venantius": "venantius honorius clementianus fortunatus venantius fortunatus",
+    "caius": "caius of rome",
+    "arnobius": "arnobius of sicca",
+    "anonymous transmitted under clements name": "pseudo-clement anonymous",
 }
 
 def norm(s: str) -> str:
