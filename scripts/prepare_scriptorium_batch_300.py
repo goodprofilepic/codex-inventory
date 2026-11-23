@@ -24,6 +24,10 @@ def clean(s):
 
 def strip_editorial_apparatus(text):
     text = clean(text)
+    # If a complete treatise is followed by an appended fragment, retain only the complete work.
+    fragment_heading = re.search(r"(?im)^#{1,6}\s+.*\bfragment\b.*$", text)
+    if fragment_heading:
+        text = text[:fragment_heading.start()].rstrip()
     # Remove footnote/endnote sections and source-site apparatus flattened from HTML.
     cut_patterns = [
         r"(?im)^\s*(?:#{1,6}\s*)?(?:footnotes?|endnotes?|notes to (?:the )?text)\s*$",
@@ -52,7 +56,7 @@ def strip_editorial_apparatus(text):
 
     # Remove call numbers and printed page/column markers.
     text = re.sub(r"(?<![A-Za-z0-9])\[\d+\](?![A-Za-z0-9])", "", text)
-    text = re.sub(r"\[(?:col\.?\s*\d+|P\.\s*\d+|l\.\s*\d+)\]", "", text, flags=re.I)
+    text = re.sub(r"\[(?:col\.?\s*\d+|P\.\s*\d+|l\.\s*\d+|RP)\]", "", text, flags=re.I)
     text = re.sub(r"\|\s*\d{1,4}\s*\|", "", text)
 
     # Remove detached source/transcription/translator notices, not authorial prefaces.
