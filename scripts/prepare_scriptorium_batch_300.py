@@ -799,12 +799,12 @@ def add_gap_review_candidates(b, gap_csv):
     fetched = {}
     def fetch_page(item):
         try:
-            response = requests.get(item["url"], timeout=35, headers={"User-Agent":"Scriptorium-reading-room-acquisition/1.0"})
+            response = requests.get(item["url"], timeout=15, headers={"User-Agent":"Scriptorium-reading-room-acquisition/1.0"})
             response.raise_for_status()
             return response.text, None
         except Exception as exc:
             return None, exc
-    with ThreadPoolExecutor(max_workers=18) as pool:
+    with ThreadPoolExecutor(max_workers=36) as pool:
         futures = {pool.submit(fetch_page, item): item for item in fetch_window}
         for future in as_completed(futures):
             fetched[id(futures[future])] = future.result()
