@@ -93,6 +93,10 @@ def author_key(s: str) -> str:
     return norm(ALIASES.get(n, n))
 
 
+def global_title_key(value: str) -> str:
+    return re.sub(r"^(?:the|a|an)", "", norm(value or ""))
+
+
 def source_path_key(value: str) -> str:
     value = unquote(str(value or "")).replace("\\", "/").strip()
     if not value:
@@ -406,15 +410,18 @@ def main():
     inv=read_rows(args.inventory_csv,";")
     batch=read_rows(args.manifest_csv,",")
     by_author=defaultdict(list)
+    global_titles=set()
     for row in inv:
         ak=author_key(row.get("attributed_author",""))
         title=row.get("title","").strip()
         if ak and title: by_author[ak].append(title)
+        if title: global_titles.add(global_title_key(title))
     prior=read_rows(args.prior_batch_manifest,",")
     for row in prior:
         ak=author_key(row.get("author",""))
         title=row.get("title","").strip()
         if ak and title: by_author[ak].append(title)
+        if title: global_titles.add(global_title_key(title))
     inventory_paths=defaultdict(list)
     for row in inv:
         key=source_path_key(row.get("source_url",""))
@@ -440,12 +447,15 @@ def main():
             title_match(title,old,row.get("author",""))
             or (sig and sig==numbered_series_signature(old))
         )]
-        hits=sorted(set(path_matches + title_matches))
+        gkey=global_title_key(title)
+        global_match=(len(gkey)>=16 and gkey in global_titles)
+        hits=sorted(set(path_matches + title_matches + (["cross-author exact title match"] if global_match else [])))
         if hits:
             inventory_hits.append((row.get("author",""),title,hits))
     batch_hits=[]
     seen=defaultdict(list)
     seen_paths={}
+    seen_global=set()
     for row in batch:
         ak=author_key(row.get("author",""))
         title=row.get("title","").strip()
@@ -454,6 +464,10 @@ def main():
             old_sig=numbered_series_signature(old)
             if title_match(title,old,row.get("author","")) or special_overlap(title,old,row.get("author","")) or (sig and sig==old_sig):
                 batch_hits.append((row.get("author",""),title,old))
+        gkey=global_title_key(title)
+        if len(gkey)>=16 and gkey in seen_global:
+            batch_hits.append((row.get("author",""),title,"same exact title under another author"))
+        seen_global.add(gkey)
         for value in [row.get("source_url",""), *(row.get("source_files","") or "").split(";")]:
             key=source_path_key(value)
             if key and key in seen_paths:
