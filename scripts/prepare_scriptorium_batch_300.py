@@ -443,7 +443,16 @@ class Builder:
 
     def add(self, author, title, body, rels, meta=None, min_words=120):
         author = canonical_author(author)
-        body = clean(body); words = len(re.findall(r"\S+", body))
+        body = clean(body)
+        # Keep this Reading Room batch focused on complete writings rather than
+        # separately catalogued fragments or sermon excerpts.
+        if re.search(r"\bfragments?\b", title, re.I) or "[FRAGMENT]" in body.upper():
+            self.skipped["fragment_or_excerpt"] += 1
+            return False
+        if author_key(author) == author_key("Julius Africanus") and norm(title) == norm("Extant Works"):
+            self.skipped["fragment_collection"] += 1
+            return False
+        words = len(re.findall(r"\S+", body))
         if len(body) < 700 or words < min_words:
             self.skipped["too_short"] += 1; return False
         if self.duplicate(author, title):
@@ -624,6 +633,7 @@ def add_new_author_works(b):
     rel = "Archelaus of Carrhae/The Acts of the Disputation with the Heresiarch Manes.html"
     if (root / rel).is_file():
         body = read_html(root, rel)
+        body = re.split(r"(?im)^#{1,4}\s+A Fragment of the Same Disputation\s*$", body, maxsplit=1)[0].strip()
         meta = metadata_for("Archelaus of Carrhae", [rel], "The Acts of the Disputation with the Heresiarch Manes",
                             "The surviving account of Archelaus's public disputation with Mani, including the appended fragment from the same disputation.")
         meta.update({"date":"c. AD 278", "translator":"S. D. F. Salmond", "edition":"Ante-Nicene Fathers, Vol. VI (1886)",
@@ -808,6 +818,8 @@ def add_gap_review_candidates(b, gap_csv):
             if author.casefold() == "pseudo-clement" and title.casefold() == "the second epistle":
                 title = "Second Epistle of Clement to the Corinthians"
             if title.casefold() == "history of armenia" or title.casefold() == "clementine homilies, introductory epistles":
+                continue
+            if author.casefold() in {"philoxenus", "philoxenus of mabbug"} and title.casefold().startswith("new documents on philoxenus"):
                 continue
             if not title or not re.fullmatch(r"(?:18[0-9]{2}|19[0-2][0-9])", (row.get("edition_year") or "").strip()):
                 continue
