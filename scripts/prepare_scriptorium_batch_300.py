@@ -447,6 +447,34 @@ def work_overlap(candidate, existing, author=None):
     if ak == author_key("Hilary of Poitiers"):
         if re.fullmatch(r"homilyonpsalm(1|53|130)", c) and compact("Homilies on Psalms 1, 53, and 130") in e:
             return True
+    if ak == author_key("Ignatius of Antioch"):
+        simplify = lambda v: re.sub(r"^(?:epistle\s+to\s+|ignatius\s+to\s+|to\s+)", "", v.casefold().strip())
+        simplify = lambda v: re.sub(r"\s*(?:\(|—|-)?\s*(?:longer recension|syriac version)\)?$", "", simplify(v)).strip()
+        if simplify(candidate) == simplify(existing):
+            return True
+    if ak == author_key("Aphrahat the Persian Sage"):
+        if "demonstrations" in e and "demonstration" in c:
+            return True
+    if ak == author_key("Aristides of Athens"):
+        if "apology" in c and "apology" in e:
+            return True
+    if ak == author_key("Lactantius"):
+        if "workmanship of god" in c and "workmanship of god" in e:
+            return True
+    if ak == author_key("Basil of Caesarea"):
+        if "on the spirit" in c and ("holy spirit" in e or "spiritus sancto" in e):
+            return True
+    if ak == author_key("Cyprian of Carthage"):
+        if ("seventh council of carthage" in c or "baptism of heretics" in c) and ("seventh council of carthage" in e or "baptism of heretics" in e):
+            return True
+    if ak == author_key("Sulpicius Severus"):
+        if re.sub(r"\\bdialogue\\s+(?:i|ii|iii)\\b", lambda m: "dialogue "+str({"i":1,"ii":2,"iii":3}[m.group(0).split()[-1]]), candidate.casefold()) == \
+           re.sub(r"\\bdialogue\\s+(?:i|ii|iii)\\b", lambda m: "dialogue "+str({"i":1,"ii":2,"iii":3}[m.group(0).split()[-1]]), existing.casefold()):
+            return True
+    # Asterius's source labels put sermon numbers before the same descriptive work titles.
+    stripped=re.sub(r"^\s*sermon\s+\d+\s*[-:—–]*\s*", "", candidate, flags=re.I)
+    if stripped and norm(stripped)==norm(existing):
+        return True
     return False
 
 def titles_match(candidate, existing, author=None):
@@ -653,6 +681,25 @@ class Builder:
         if re.search(r"\bfragments?\b", title, re.I) or "[FRAGMENT]" in body.upper():
             self.skipped["fragment_or_excerpt"] += 1
             return False
+        if re.search(r"\b(?:dubious and spurious pieces|quotes on revelation|book\s*2\s*\(start\)|praefatio|prefatory address)\b", title, re.I):
+            self.skipped["fragment_or_editorial"] += 1
+            return False
+        if author_key(author) == author_key("Basil of Caesarea") and re.search(r"homil(?:y|ies)\s+on\s+psalm", title, re.I):
+            self.skipped["rights_hold"] += 1
+            return False
+        rights_identity = (author + " " + title + " " + " ".join(rels)).casefold()
+        if ("oecumenius" in rights_identity and ("litteral" in rights_identity or "translation" in rights_identity)):
+            self.skipped["rights_hold"] += 1
+            return False
+        if "rabanus maurus" in rights_identity and ("maccabees" in rights_identity or "wisdom of solomon" in rights_identity):
+            self.skipped["rights_hold"] += 1
+            return False
+        if "ambrosiaster" in rights_identity and ("commentary on romans" in rights_identity or "questions on the old and new testaments" in rights_identity):
+            self.skipped["rights_hold"] += 1
+            return False
+        if "jerome" in rights_identity and "commentary on daniel" in rights_identity:
+            self.skipped["rights_hold"] += 1
+            return False
         if author_key(author) == author_key("Julius Africanus") and norm(title) == norm("Extant Works"):
             self.skipped["fragment_collection"] += 1
             return False
@@ -662,7 +709,14 @@ class Builder:
         if self.duplicate(author, title, rels):
             self.skipped["inventory_or_prior_source_duplicate"] += 1; return False
         ak = author_key(author)
-        if any(author_key(item["author"]) == ak and titles_match(title, item["title"], author) for item in self.items):
+        if any(
+            author_key(item["author"]) == ak and (
+                titles_match(title, item["title"], author)
+                or source_is_known_compound(author, title, item["title"])
+                or (numbered_series_signature(title) and numbered_series_signature(title)==numbered_series_signature(item["title"]))
+            )
+            for item in self.items
+        ):
             self.skipped["batch_duplicate"] += 1; return False
         m = meta or metadata_for(author, rels, title)
         translator = (m.get("translator") or "").strip() or "Not identified in source edition"
