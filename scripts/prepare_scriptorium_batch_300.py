@@ -627,8 +627,17 @@ def source_is_known_compound(author, candidate, existing):
     return False
 
 def global_title_key(value):
-    key = norm(value or "")
-    return re.sub(r"^(?:the|a|an)", "", key)
+    key = re.sub(r"^(?:the|a|an)", "", norm(value or ""))
+    # Known title variants across anonymous/pseudonymous catalogue labels.
+    if "protevangelium" in key or "protoevangelium" in key:
+        return "protoevangeliumofjames"
+    if "perpetua" in key and "felicit" in key:
+        return "passionofperpetuaandfelicity"
+    if "liturgy" in key and "james" in key:
+        return "liturgyofsaintjames"
+    if "liturgy" in key and "mark" in key and ("apostle" in key or "saint" in key):
+        return "liturgyofsaintmark"
+    return key
 
 class Builder:
     def __init__(self, root, inventory_path, prior_batch_manifest=None):
@@ -1473,10 +1482,7 @@ def build_extended_source_pool(b):
     for known_count,_,top,base_author in ranked:
         if len(b.items)>=TARGET: break
         if top.name=="Apostolic Constitutions":
-            rel="Apostolic Constitutions/Constitutions of the Holy Apostles Book 8.html"
-            if (root/rel).is_file():
-                b.add_single("Anonymous compiler (Apostolic Constitutions)","Apostolic Constitutions — Book VIII",rel,
-                    "Book VIII of the Apostolic Constitutions, containing liturgical and ecclesiastical materials. Books I–VII are already catalogued.",500)
+            # Book VIII includes the Ecclesiastical Canons already present in the catalogue.
             continue
 
         def author_for(directory):
