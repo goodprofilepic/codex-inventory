@@ -109,10 +109,15 @@ def html_to_text(raw):
         if href.startswith(("#fn", "#r")) or re.fullmatch(r"\[?\d+\]?", txt):
             node.decompose()
     blocks, buf = [], []
+    def editorial_block(t):
+        # Old editions often insert an editor's one-paragraph "Argument" before a letter/homily.
+        # It is not part of the author's text, unlike chapter headings and the numbered work itself.
+        return bool(re.match(r"^(?:argument\s*[.—:\-]|editor(?:'s)?\s+(?:note|introduction)\b|translator(?:'s)?\s+(?:note|introduction)\b)", t, re.I))
+
     def flush():
         nonlocal buf
         t = clean(" ".join(buf)); buf = []
-        if t and not re.match(r"^(?:translated by|transcribed by|turned into english by|commissioned and uploaded by)\b", t, re.I):
+        if t and not editorial_block(t) and not re.match(r"^(?:translated by|transcribed by|turned into english by|commissioned and uploaded by)\b", t, re.I):
             blocks.append(t)
     def walk(node):
         if isinstance(node, NavigableString):
@@ -129,7 +134,7 @@ def html_to_text(raw):
         elif n in ("p","li","blockquote","pre"):
             flush()
             t = clean(node.get_text(" ", strip=True))
-            if t and not re.match(r"^(?:translated by|transcribed by|turned into english by|commissioned and uploaded by)\b", t, re.I):
+            if t and not editorial_block(t) and not re.match(r"^(?:translated by|transcribed by|turned into english by|commissioned and uploaded by)\b", t, re.I):
                 blocks.append(t)
         elif n in ("div","section","article","ul","ol","table","tr"):
             flush()
