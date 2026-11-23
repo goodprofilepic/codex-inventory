@@ -1660,7 +1660,8 @@ def main():
     p.add_argument("--gap-review-csv",required=True,type=Path)
     a=p.parse_args()
     b=Builder(a.source_dir,a.inventory_csv,a.prior_batch_manifest)
-    add_pelagius(b)
+    # All 13 Pelagius Pauline expositions are already in the previous 200-work batch.
+    # Do not refetch and reprocess the completed Pelagius corpus.
     add_manual(b)
     add_new_author_works(b)
     # Protect curated gaps in currently represented authors before broad web-candidate fills.
