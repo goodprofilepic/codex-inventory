@@ -1510,7 +1510,7 @@ def build_extended_source_pool(b):
             return canonical_author(top.name)
 
         author=canonical_author(top.name)
-        cap=14 if known_count==0 else 10
+        cap=18 if known_count==0 else 12
         author_added=0
         dirs=[top]+[p for p in top.rglob("*") if p.is_dir()]
         dirs.sort(key=lambda p:(len(p.relative_to(top).parts),natural_key(str(p))))
